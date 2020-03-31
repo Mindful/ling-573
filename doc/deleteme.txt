@@ -1,2 +1,0 @@
-git won't record directories without files in them, so this is a dummy file to record git directories
-once other files have been commited to the same directory as this file, please delete this file
