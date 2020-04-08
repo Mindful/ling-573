@@ -1,4 +1,5 @@
 from data import *
+from preprocessing.topic_doc_group import DocumentGroup
 # have to at least import Topic class from data for unpickling to work
 
 def main():
@@ -7,6 +8,7 @@ def main():
     for topic in dev_topics:
         print(topic)  # TODO - actual code goes in this loop
 
+    doc_groups = [DocumentGroup(topic) for topic in dev_topics]
 
 
 
