@@ -6,9 +6,7 @@ def main():
     #train_topics = get_dataset_topics(TRAIN)
     dev_topics = get_dataset_topics(DEV_TEST)
     for topic in dev_topics:
-        print(topic)  # TODO - actual code goes in this loop
-
-    doc_groups = [DocumentGroup(topic) for topic in dev_topics]
+        doc_group = DocumentGroup(topic)
 
 
 
