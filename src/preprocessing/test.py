@@ -49,20 +49,25 @@ class TestPreprocessing(unittest.TestCase):
 
         article_1_paragraph_1 = article_1.paragraphs[0]
         article_1_paragraph_2 = article_1.paragraphs[2]
-
         article_2_paragraph_1 = article_2.paragraphs[0]
 
         paragraph_1_sents = list(article_1_paragraph_1.sents)
         paragraph_1_ents = list(article_1_paragraph_1.ents)
-        
+        paragraph_1_noun_chunks = list(article_1_paragraph_1.noun_chunks)
+
+        # sentences
         self.assertEqual(len(paragraph_1_sents), 2)
         self.assertIs(type(paragraph_1_sents[0]), Span)
-
         self.assertEqual(paragraph_1_sents[0].text, 'LITTLETON, Colo. (AP) --')
         self.assertEqual(paragraph_1_sents[1].text, "The sheriff's initial estimate of as many as 25 dead in the Columbine High massacre was off the mark apparently because the six SWAT teams that swept the building counted some victims more than once.")
 
+        # ents
         self.assertEqual(type(paragraph_1_ents[0]), Span)
         self.assertEqual([ent.text for ent in paragraph_1_ents], ["LITTLETON", "Colo.", "AP", "as many as 25", "Columbine High", "six", "SWAT"])
+
+        # noun_chucks
+        self.assertEqual(type(paragraph_1_noun_chunks[0]), Span)
+        self.assertEqual([chunk.text for chunk in paragraph_1_noun_chunks], ["LITTLETON", "Colo. (AP", "The sheriff's initial estimate", "the Columbine High massacre", "the mark", "the six SWAT teams", "the building", "some victims"])
 
         # cosine vector similarity comparisons
         self.assertEqual(article_1_paragraph_1.text, "LITTLETON, Colo. (AP) -- The sheriff's initial estimate of as many as 25 dead in the Columbine High massacre was off the mark apparently because the six SWAT teams that swept the building counted some victims more than once.")
