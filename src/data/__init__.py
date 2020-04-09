@@ -102,6 +102,6 @@ def get_dataset_topics(dataset):
                 pickle.dump(topics, picklefile)
             return topics
         except OSError:
-            raise RuntimeError("Failed to retrieve the base file. If you are running without the pickled file, please"
+            raise RuntimeError("Failed to retrieve the base file. If you are running without the pickled file, please "
                                "make sure to run on patas")
 
