@@ -1,26 +1,29 @@
 import os
+import argparse
 from pathlib import Path
 import xml.etree.cElementTree as ET
 import xml.dom.minidom
 
 '''
 Generates a ROUGE config file that can be used to run the ROUGE calculation,
-given the directories for 1. The summary outputs (peer_root_dir) and 2. The human model summaries (model_dir)
+given the directories for:
+1. The summary outputs (peer_root_dir)
+2. The human model summaries (model_dir)
+(also optionally, output directory and output file name)
 
 Example usage:
-    output_rouge_config('/573/Data/mydata', '/573/Data/models/devtest/')
+    python3 generate_rouge_config.py  --peer_root_dir /573/Data/mydata  --model_dir /573/Data/models/devtest/
 '''
 
-
-def output_rouge_config(peer_root_dir, model_dir, output_dir='output', out_filename='rouge_config'):
+def main(input_args):
     rouge_eval = ET.Element("ROUGE_EVAL", version="1.5.5")
-    eval_groups = [file_name for file_name in os.listdir(peer_root_dir)]
+    eval_groups = [file_name for file_name in os.listdir(input_args.peer_root_dir)]
 
     for eval_group in sorted(eval_groups):
-        _add_eval_group(rouge_eval, eval_group, peer_root_dir, model_dir)
+        _add_eval_group(rouge_eval, eval_group, input_args.peer_root_dir, input_args.model_dir)
 
     tree = ET.ElementTree(rouge_eval)
-    _write_config_file(output_dir, out_filename, tree)
+    _write_config_file(input_args.output_dir, input_args.out_filename, tree)
 
 
 def _add_eval_group(rouge_eval, eval_group, peer_root_dir, model_dir):
@@ -64,3 +67,13 @@ def _write_config_file(output_dir, out_filename, tree):
     with open(file_name, 'w') as config_file:
         config_file.write(pretty_xml)
 
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--peer_root_dir', type=str, required=True)
+    parser.add_argument('--model_dir', type=str, required=True)
+    parser.add_argument('--output_dir', type=str, default='output')
+    parser.add_argument('--out_filename', type=str, default='rouge_config')
+
+    input_args = parser.parse_args()
+    main(input_args)
