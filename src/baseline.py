@@ -13,8 +13,7 @@ def main():
         doc_group = DocumentGroup(topic)
         #TODO: process the topic, then pass the final result into output_summary
         # Content selection
-        #selected_content = Selection(doc_group)
-
+        selected_content = Selection(doc_group)
 
         output_summary(None)
         bar.next()
