@@ -19,7 +19,7 @@ class DocumentGroup:
 
     def __init__(self, topic):
         self.topic_id = topic.id
-        self.narrative = topic.narrative
+        self.narrative = process_text(topic.narrative)
         self.title = topic.title
         self.articles = [DocGroupArticle(article) for article in topic.articles]
 
@@ -36,7 +36,7 @@ class DocGroupArticle:
     def __init__(self, article):
         self.id = article.id
         self.date = article.date
-        self.headline = article.headline
+        self.headline = process_text(article.headline)
         self.type = article.type
         self.paragraphs = self._process_paragraphs(article.paragraphs)
         self.unprocessed_paragraphs = article.paragraphs
@@ -49,6 +49,12 @@ class DocGroupArticle:
 
     def _process_paragraphs(self, paragraphs):
         return [nlp_parser(clean_text(p)) for p in paragraphs]
+
+
+def process_text(text):
+    if text:
+        return nlp_parser(text)
+    return None
 
 
 def clean_text(text):

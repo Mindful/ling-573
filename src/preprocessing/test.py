@@ -9,7 +9,7 @@ from data import Topic
 class TestPreprocessing(unittest.TestCase):
     def setUp(self):
         Metadata = namedtuple('Metadata', ['id', 'title', 'narrative'])
-        topic_metadata = Metadata(id='D1001A', title='Columbine Massacre', narrative='')
+        topic_metadata = Metadata(id='D1001A', title='Columbine Massacre', narrative='Here is a sample narrative')
 
         Article = namedtuple('Article', ['id', 'date', 'type', 'headline', 'paragraphs'])
         article_1 = Article(id='APW19990421.0284', date=datetime.date(1999, 4, 21), type=None, headline=None, paragraphs=["LITTLETON, Colo. (AP) -- The sheriff's initial estimate of as  \nmany as 25 dead in the Columbine High massacre was off the mark \napparently because the six SWAT teams that swept the building \ncounted some victims more than once.", 'Sheriff John Stone said Tuesday afternoon that there could be as  \nmany as 25 dead. By early Wednesday, his deputies said the death \ntoll was 15, including the two gunmen.', "The discrepancy occurred because the SWAT teams that picked  \ntheir way past bombs and bodies in an effort to secure building \ncovered overlapping areas, said sheriff's spokesman Steve Davis.", "``There were so many different SWAT teams in there, we were  \nconstantly getting different counts,'' Davis said.", 'As they gave periodic updates through the night, Davis and Stone  \nemphasized the death toll was unconfirmed. They said their priority \nwas making sure the school was safe.'])
@@ -24,7 +24,8 @@ class TestPreprocessing(unittest.TestCase):
         
         self.assertEqual(document_group.topic_id, self.topic.id)
         self.assertEqual(document_group.title, self.topic.title)
-        self.assertEqual(document_group.narrative, self.topic.narrative)
+        self.assertEqual(type(document_group.narrative), Doc)
+        self.assertEqual(document_group.narrative.text, self.topic.narrative)
         self.assertEqual(len(document_group.articles), 3)
         self.assertEqual(type(document_group.articles[0]), DocGroupArticle)
 
