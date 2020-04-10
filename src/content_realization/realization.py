@@ -9,6 +9,12 @@ class Realization:
         self.summary = self.summarize()
 
     def summarize(self):
+        '''
+        ** Takes words from selection_object until 100 words reached. **
+        ** Consider writing only full sentences to summary, instead of exactly 100 words **
+        ** No thought currently to order between articles **
+        :return: summary as a string, 1 sentence per line.
+        '''
         total_words = 0
         summary = ""
         # Iterate through all spans in selection until we reach 100 words
