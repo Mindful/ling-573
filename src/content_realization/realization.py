@@ -8,11 +8,12 @@ class Realization:
         self.word_quota = WORD_QUOTA
         self.summary = self.summarize()
 
-    def summarize(self):
+    def summarize(self, complete_sentences = True):
         '''
         ** Takes words from selection_object until 100 words reached. **
         ** Consider writing only full sentences to summary, instead of exactly 100 words **
         ** No thought currently to order between articles **
+        :param complete_sentences: True means summary will end with a complete sentence. False will fill to exactly 100 words.
         :return: summary as a string, 1 sentence per line.
         '''
         total_words = 0
@@ -31,9 +32,10 @@ class Realization:
                     summary = summary+cand+"\n"
                     total_words += cand_len
                 else:
-                    # if cand will overfill quota, take only as many words as necessary to reach quota
-                    summary = summary + ' '.join(cand.split()[0:remaining_words])
-                    total_words += self.word_quota
+                    if not complete_sentences:
+                        # if cand will overfill quota, take only as many words as necessary to reach quota
+                        summary = summary + ' '.join(cand.split()[0:remaining_words])
+                        total_words += self.word_quota
                     quota_reached = True
                     break
         return summary
