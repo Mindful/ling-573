@@ -26,8 +26,7 @@ class Realization:
                     total_words += cand_len
                 else:
                     # if cand will overfill quota, take only as many words as necessary to reach quota
-                    shortened_cand = ' '.join(cand.split()[0:remaining_words])
-                    summary = summary + shortened_cand
+                    summary = summary + ' '.join(cand.split()[0:remaining_words])
                     total_words += self.word_quota
                     quota_reached = True
                     break
