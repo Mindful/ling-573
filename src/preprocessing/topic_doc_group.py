@@ -31,7 +31,7 @@ class DocumentGroup:
 
 
 class DocGroupArticle:
-    __slots__ = ['id', 'date', 'headline', 'type', 'paragraphs', 'unprocessed_paragraphs']
+    __slots__ = ['id', 'date', 'headline', 'type', 'paragraphs']
 
     def __init__(self, article):
         self.id = article.id
@@ -39,7 +39,6 @@ class DocGroupArticle:
         self.headline = process_text(article.headline)
         self.type = article.type
         self.paragraphs = self._process_paragraphs(article.paragraphs)
-        self.unprocessed_paragraphs = article.paragraphs
 
     def __str__(self):
         return str({attr: getattr(self, attr) for attr in self.__slots__})
@@ -48,7 +47,7 @@ class DocGroupArticle:
         return "<{} {}: {}>".format(self.__class__.__name__, self.id, self.date)
 
     def _process_paragraphs(self, paragraphs):
-        return [nlp_parser(clean_text(p)) for p in paragraphs]
+        return [nlp_parser(clean_text(p)) for p in paragraphs if p]
 
 
 def process_text(text):
