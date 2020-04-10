@@ -4,10 +4,11 @@ from data.article import ArticleQuery, Article
 from data.corpora import CORPORA
 from data.topic import Topic, read_topics_file
 from progress.bar import Bar
+from common import *
 
 
-DATA_DIR = '../data/'  # relative to source directory
-OUTPUT_DIR = '../outputs/'
+DATA_DIR = os.path.join(ROOT_DIR, 'data/')
+OUTPUT_DIR = os.path.join(ROOT_DIR, 'outputs/')
 
 
 DEV_TEST = 'dev_test'

@@ -1,11 +1,10 @@
-from content_selection.selection import Selection
-
-WORD_QUOTA = 100
 
 class Realization:
+
+    word_quota = 100
+
     def __init__(self, selection_object):
         self.selection = selection_object
-        self.word_quota = WORD_QUOTA
         self.summary = self.summarize()
 
     def summarize(self, complete_sentences = True):
