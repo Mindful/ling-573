@@ -1,5 +1,4 @@
 from content_selection.selection import Selection
-from content_realization.utils import span_len, word_span
 
 WORD_QUOTA = 100
 
@@ -18,16 +17,17 @@ class Realization:
             if quota_reached:
                 break
             for cand in list(candidates):
+                cand = cand.text
                 remaining_words = self.word_quota - total_words
-                cand_len = span_len(cand)
+                cand_len = len(cand.split()) #I think this is how word count will be measured in evaluation
                 if cand_len <= remaining_words:
                     # if cand will not overfill quota, add whole span to summary
-                    summary = summary+cand.text+"\n"
+                    summary = summary+cand+"\n"
                     total_words += cand_len
                 else:
                     # if cand will overfill quota, take only as many words as necessary to reach quota
-                    new_span = word_span(cand.doc, cand.start, cand.start+remaining_words)
-                    summary = summary + new_span.text
+                    shortened_cand = ' '.join(cand.split()[0:remaining_words])
+                    summary = summary + shortened_cand
                     total_words += self.word_quota
                     quota_reached = True
                     break
