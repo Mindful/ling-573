@@ -89,6 +89,13 @@ class TestPreprocessing(unittest.TestCase):
         self.assertEqual(cleaned, "LITTLETON, Colo. (AP) -- The sheriff's initial estimate of as many as 25 dead in the Columbine High.")
 
 
+    def test_cleaning_text_removes_spurios_newline_chars_touching_words(self):
+        text = "The New York Times plans two pages of stories, photos and\ngraphics on the aftermath of the school shooting in a Denver suburb\nthat left 15 dead."
+        cleaned = clean_text(text)
+
+        self.assertEqual(cleaned, "The New York Times plans two pages of stories, photos and graphics on the aftermath of the school shooting in a Denver suburb that left 15 dead.")
+
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -65,7 +65,8 @@ def clean_text(text):
     # * strange punctuation handling/removal
 
     # * remove spurious line breaks 
-    text = re.sub("\s+\\n", " ", text)
+    text = re.sub('\s+\\n', ' ', text)
+    text = re.sub('(\S+)\\n', r'\1 ', text)
 
     # * possibly remove quotes?
     # * remove taglines, e.g. "BY/ By/ Source, etc."
