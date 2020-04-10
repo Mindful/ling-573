@@ -43,7 +43,12 @@ class Article:
         id = get_child_text(xml_object, 'DOCNO')
         type = get_child_text(xml_object, 'DOCTYPE')
         headline = get_child_text(xml_object, 'HEADER')
-        paragraphs = [x.text.strip() for x in get_child(get_child(xml_object, 'BODY'), 'TEXT')]
+        text_obj = get_child(get_child(xml_object, 'BODY'), 'TEXT')
+        paragraphs = [x.text.strip() for x in text_obj]
+
+        raw_text = text_obj.text.strip()
+        if raw_text:
+            paragraphs = [raw_text] + paragraphs
 
         return Article(id, type, headline, paragraphs)
 
@@ -53,6 +58,12 @@ class Article:
         id = xml_object.attrib['id']
         type = xml_object.attrib['type']
         headline = get_child_text(xml_object, 'HEADLINE')
-        paragraphs = [x.text.strip() for x in get_child(xml_object, 'TEXT')]
+        text_obj = get_child(xml_object, 'TEXT')
+        paragraphs = [x.text.strip() for x in text_obj]
+
+        raw_text = text_obj.text.strip()
+        if raw_text:
+            paragraphs = [raw_text] + paragraphs
+
 
         return Article(id, type, headline, paragraphs)
