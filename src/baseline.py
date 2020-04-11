@@ -12,12 +12,9 @@ def main():
     bar = Bar('Processing topics...', max=len(topics))
     for topic in topics:
         doc_group = DocumentGroup(topic)
-        #TODO: process the topic, then pass the final result into output_summary
-        # Content selection
         selected_content = Selection(doc_group)
         realized_content = Realization(selected_content)
-
-        output_summary(None)
+        output_summary(realized_content)
         bar.next()
 
 

@@ -68,19 +68,18 @@ def _fetch_articles_into_topics(queries, topic_metadatas):
     return topics
 
 
-def _write_out_summary(topic_id, summary_text, alphanum_id='1'):
+def _write_out_summary(topic_id, summary_sentences, alphanum_id='1'):
     id_part_1 = topic_id[0:5]
     id_part_2 = topic_id[5:]
     output_filename = id_part_1 + '-A.M.100.' + id_part_2 + '.' + alphanum_id
 
     with open(os.path.join(OUTPUT_DIR, output_filename), 'w') as f:
-        f.write(summary_text)
+        f.writelines(x+'\n' for x in summary_sentences)
 
 
-def output_summary(summary):
-    #TODO: call _write_out_summary with necessary info from final summary object
+def output_summary(realization):
+    _write_out_summary(realization.doc_group.topic_id, realization.summary)
     pass
-
 
 
 def get_dataset_topics(dataset):

@@ -17,7 +17,6 @@ class Selection:
         """
 
         num_paragraphs = len(document_group_article.paragraphs)
-        print(type(document_group_article.paragraphs[0]))
         return ( list(document_group_article.paragraphs[0].sents)[0],
                  list(document_group_article.paragraphs[num_paragraphs-1].sents)[0]
                )
