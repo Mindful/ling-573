@@ -3,6 +3,7 @@ import argparse
 from pathlib import Path
 import xml.etree.cElementTree as ET
 import xml.dom.minidom
+from data import OUTPUT_DIR, OUTPUT_FILE_REGEX
 
 '''
 Generates a ROUGE config file that can be used to run the ROUGE calculation,
@@ -17,7 +18,8 @@ Example usage:
 
 def main(input_args):
     rouge_eval = ET.Element("ROUGE_EVAL", version="1.5.5")
-    eval_groups = [file_name for file_name in os.listdir(input_args.peer_root_dir)]
+    eval_groups = [file_name for file_name in os.listdir(input_args.peer_root_dir)
+                   if OUTPUT_FILE_REGEX.match(file_name)]
 
     for eval_group in sorted(eval_groups):
         _add_eval_group(rouge_eval, eval_group, input_args.peer_root_dir, input_args.model_dir)
@@ -72,7 +74,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--peer_root_dir', type=str, required=True)
     parser.add_argument('--model_dir', type=str, required=True)
-    parser.add_argument('--output_dir', type=str, default='output')
+    parser.add_argument('--output_dir', type=str, default=OUTPUT_DIR)
     parser.add_argument('--out_filename', type=str, default='rouge_config')
 
     input_args = parser.parse_args()

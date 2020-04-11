@@ -5,10 +5,14 @@ from data.corpora import CORPORA
 from data.topic import Topic, read_topics_file
 from progress.bar import Bar
 from common import *
+import re
 
 
 DATA_DIR = os.path.join(ROOT_DIR, 'data/')
 OUTPUT_DIR = os.path.join(ROOT_DIR, 'outputs/')
+
+OUTPUT_FILE_STRING = '-A.M.100.'
+OUTPUT_FILE_REGEX = re.compile(r'.*' + re.escape(OUTPUT_FILE_STRING) + r'.*')
 
 
 DEV_TEST = 'dev_test'
@@ -71,7 +75,7 @@ def _fetch_articles_into_topics(queries, topic_metadatas):
 def _write_out_summary(topic_id, summary_sentences, alphanum_id='1'):
     id_part_1 = topic_id[0:5]
     id_part_2 = topic_id[5:]
-    output_filename = id_part_1 + '-A.M.100.' + id_part_2 + '.' + alphanum_id
+    output_filename = id_part_1 + OUTPUT_FILE_STRING + id_part_2 + '.' + alphanum_id
 
     with open(os.path.join(OUTPUT_DIR, output_filename), 'w') as f:
         f.writelines(x+'\n' for x in summary_sentences)
