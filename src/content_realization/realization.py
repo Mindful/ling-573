@@ -3,14 +3,14 @@ class Realization:
 
     word_quota = 100
 
-    def __init__(self, selection_object):
-        self.selected_content = selection_object.selected_content
-        self.doc_group = selection_object.doc_group
+    def __init__(self, ordering_object):
+        self.ordered_sents = ordering_object.ordered_sents
+        self.doc_group = ordering_object.doc_group
         self.summary = self.summarize()
 
     def summarize(self, complete_sentences = True):
         '''
-        ** Takes sentences from selection_object until 100 words reached (only full sentences). **
+        ** Takes sentences from ordering_object until 100 words reached (only full sentences). **
         ** No thought currently to order between articles **
         :param complete_sentences: True means summary will end with a complete sentence. False will fill to exactly 100 words.
         :return: summary as a list of strings.
@@ -19,7 +19,7 @@ class Realization:
         summary = []
         # Iterate through all spans in selection until we reach 100 words
         quota_reached = False # Marks whether we've reached word quota. Know when to exit outer loop
-        for candidates in self.selected_content.values():
+        for candidates in self.ordered_sents.values():
             if quota_reached:
                 break
             for cand in [x.text for x in list(candidates)]:

@@ -1,6 +1,7 @@
 from data import *  # needs to be import * for pickling to work
 from preprocessing.topic_doc_group import DocumentGroup
 from content_selection.selection import Selection
+from information_ordering.ordering import Ordering
 from content_realization.realization import Realization
 from progress.bar import Bar
 
@@ -13,7 +14,8 @@ def main():
     for topic in topics:
         doc_group = DocumentGroup(topic)
         selected_content = Selection(doc_group)
-        realized_content = Realization(selected_content)
+        ordered_content = Ordering(selected_content)
+        realized_content = Realization(ordered_content)
         output_summary(realized_content)
         bar.next()
 
