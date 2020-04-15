@@ -13,7 +13,10 @@ class Selection:
 
     def __init__(self,document_group_object):
         self.doc_group = document_group_object
-        self.selected_content = { article.id:Content(self.select(article),None) for article in document_group_object.articles}
+        self.selected_content = {
+            article.id: [Content(span, None) for span in self.select(article)]  # will need to adjust here to add in weights correctly
+            for article in document_group_object.articles
+        }
         #self.subtopics = self.lda()
 
 
