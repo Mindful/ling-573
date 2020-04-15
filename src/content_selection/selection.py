@@ -7,7 +7,7 @@ class Selection:
     def __init__(self,document_group_object):
         self.doc_group = document_group_object
         self.selected_content = { article.id:self.select(article) for article in document_group_object.articles}
-        #self.lda()
+        #self.subtopics = self.lda()
 
 
     def select(self,document_group_article):

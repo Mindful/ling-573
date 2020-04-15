@@ -50,16 +50,18 @@ class LDA:
 
 
     def topN_topics(self,model, feature_names, no_top_words):
-            for topic_idx, topic in enumerate(model.components_):
-                print("Topic %d:" % (topic_idx))
-                print(" ".join([feature_names[i]
-                          for i in topic.argsort()[:-no_top_words - 1:-1]]))
+        topic_vec = {}
+        for topic_idx, topic in enumerate(model.components_):
+            topic_vec[topic_idx] = " ".join([feature_names[i]for i in topic.argsort()[:-no_top_words - 1:-1]])
+        return topic_vec
 
 
     def run(self):
         document_matrix = np.stack([self.doc2vec(article) for article in self.docs.articles])
         lda = skLDA(n_components=self.num_topics,n_jobs=-1)
         lda.fit(document_matrix)
-        self.topN_topics(lda,{v:k for k,v in self.vocab.items()},10)
+        topics = self.topN_topics(lda,{v:k for k,v in self.vocab.items()},10)
+        return topics
+
 
 
