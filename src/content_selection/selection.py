@@ -2,11 +2,18 @@ from preprocessing.topic_doc_group import DocumentGroup
 from content_selection.lda import LDA
 import spacy,re
 
+
+
+class Content:
+    def __init__(self,content,weight):
+        self.span = content
+        self.weight = weight
+
 class Selection:
 
     def __init__(self,document_group_object):
         self.doc_group = document_group_object
-        self.selected_content = { article.id:self.select(article) for article in document_group_object.articles}
+        self.selected_content = { article.id:Content(self.select(article),None) for article in document_group_object.articles}
         #self.subtopics = self.lda()
 
 
@@ -23,3 +30,4 @@ class Selection:
                )
     def lda(self):
         return LDA(self.doc_group)
+
