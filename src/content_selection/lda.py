@@ -9,7 +9,7 @@ class LDA:
         self.vocab = self.get_vocab(self.docs)
         self.num_topics = 5
         self.num_words = 10
-        self.run()
+        self.subtopics = self.run()
 
     def accept_token(self,token):
         tok_str = str(token).lower()

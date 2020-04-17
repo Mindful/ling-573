@@ -11,14 +11,30 @@ class Content:
 
 class Selection:
 
-    def __init__(self,document_group_object):
+    def __init__(self,document_group_object,use_lda=False):
         self.doc_group = document_group_object
+        self.USE_LDA = use_lda
+        self.subtopics = self.lda()
         self.selected_content = {
             article.id: [Content(span, None) for span in self.select(article)]  # will need to adjust here to add in weights correctly
             for article in document_group_object.articles
         }
-        #self.subtopics = self.lda()
 
+
+
+
+    def get_sentences(self,article):
+        return [ sentence for i in range(len(article.paragraphs)) for sentence in list(article.paragraphs[i].sents) ]
+
+
+    def topic_comparison(self,sentences, topic):
+        num_sents = len(sentences)
+        scores = {i:0 for i in range(num_sents)}
+        for i in range(len(sentences)):
+            for tok in sentences[i]:
+                if str(tok) in topic:
+                    scores[i]+=1
+        return scores
 
     def select(self,document_group_article):
         """
@@ -26,11 +42,20 @@ class Selection:
         :param document_group_article: An object of class DocGroupArticle
         :return : The first sentence of the first and last paragraphs of the article
         """
+        if self.USE_LDA:
+            sentences = self.get_sentences(document_group_article)
+            selections = set([])
+            for id in self.subtopics:
+                scores = sorted(self.topic_comparison(sentences,self.subtopics[id]).items(),key=lambda x:x[1],reverse=True)
+                selections.add(sentences[scores[0][0]])
+            return tuple(selections)
+        else:
+            num_paragraphs = len(document_group_article.paragraphs)
+            return ( list(document_group_article.paragraphs[0].sents)[0],
+                    list(document_group_article.paragraphs[num_paragraphs-1].sents)[0]
+                   )
 
-        num_paragraphs = len(document_group_article.paragraphs)
-        return ( list(document_group_article.paragraphs[0].sents)[0],
-                 list(document_group_article.paragraphs[num_paragraphs-1].sents)[0]
-               )
+
     def lda(self):
-        return LDA(self.doc_group)
+        return LDA(self.doc_group).subtopics
 
