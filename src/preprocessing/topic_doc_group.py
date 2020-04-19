@@ -61,14 +61,16 @@ def clean_text(text):
 
     # ideas:
     # * remove (or convert?) the location parenthetical that begins most articles, e.g. "LITTLETON, Colo. (AP) --"
+    text = re.sub(r'^.{0,50}\(AP\) --', '', text) # remove (AP) -- and previous text for anything up to 50 chars from beginning of line
     # * strange punctuation handling/removal
 
     # * remove spurious line breaks 
     text = re.sub('\s+\\n', ' ', text)
     text = re.sub('(\S+)\\n', r'\1 ', text)
 
+
     # * possibly remove quotes?
     # * remove taglines, e.g. "BY/ By/ Source, etc."
-    return text
+    return text.strip()
 
 
