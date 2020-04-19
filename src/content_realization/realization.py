@@ -22,6 +22,7 @@ class Realization:
         for cand in self.ordered_sents:
             if quota_reached:
                 break
+            cand.span = trim(cand.span)
             cand = cand.span.text
             if cand in summary:
                 #avoid adding sentences that are exact duplicates
