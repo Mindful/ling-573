@@ -122,6 +122,30 @@ class TestPreprocessing(unittest.TestCase):
         self.assertEqual(cleaned, "Pastors in Jonesboro, Ark., scene of an earlier school shooting")
 
 
+    def test_cleaning_text_removes_location(self):
+        text = "NEW YORK _ The Rev. Al Sharpton stepped to the microphone outside the Bronx County Couthouse and bellowed"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "The Rev. Al Sharpton stepped to the microphone outside the Bronx County Couthouse and bellowed")
+
+
+    def test_cleaning_text_removes_link(self):
+        text = "On the Net:"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_removes_link_2(self):
+        # not certain what would actually be desired here. delete the whole rest of the sentence? need to make sure it won't break the text in other use cases, if so
+        text = "http://ifats.org is the International Fat Applied Technology Society"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "is the International Fat Applied Technology Society")
+
+
+    def test_cleaning_text_removes_email_line(self):
+        text = "E-mail: triggp(at)nytimes.com.'"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
 
 if __name__ == '__main__':
     unittest.main()

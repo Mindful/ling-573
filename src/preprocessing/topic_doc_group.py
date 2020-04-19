@@ -62,7 +62,12 @@ def clean_text(text):
     # ideas:
     # * remove (or convert?) the location parenthetical that begins most articles, e.g. "LITTLETON, Colo. (AP) --"
     text = re.sub(r'^.{0,50}\(AP\) --', '', text) # remove (AP) -- and previous text for anything up to 50 chars from beginning of line
-    # * strange punctuation handling/removal
+    text = re.sub(r'^[A-Z | \w]*_', '', text) # remove location and underscore, e.g. "NEW YORK _"
+
+    # taglines, websites, etc.
+    text = re.sub(r'^\w*on the net.*$', '', text, flags=re.IGNORECASE) # remove 'on the net' and everything following
+    text = re.sub(r'^https?://\S+', '', text) # remove urls
+    text = re.sub(r'\w*E-?mail.{0,100}', '', text, flags=re.IGNORECASE)  # remove email and following up to 100 chars, e.g. E-mail: triggp(at)nytimes.com.
 
     # * remove spurious line breaks 
     text = re.sub('\s+\\n', ' ', text)
