@@ -47,7 +47,8 @@ class DocGroupArticle:
         return "<{} {}: {}>".format(self.__class__.__name__, self.id, self.date)
 
     def _process_paragraphs(self, paragraphs):
-        return [nlp_parser(clean_text(p)) for p in paragraphs if p]
+        cleaned = [clean_text(p) for p in paragraphs]
+        return [nlp_parser(p) for p in cleaned if p]
 
 
 def process_text(text):
