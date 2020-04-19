@@ -58,7 +58,7 @@ class LDA:
 
     def run(self):
         document_matrix = np.stack([self.doc2vec(article) for article in self.docs.articles])
-        lda = skLDA(n_components=self.num_topics,n_jobs=-1)
+        lda = skLDA(n_components=self.num_topics,n_jobs=None)
         lda.fit(document_matrix)
         topics = self.topN_topics(lda,{v:k for k,v in self.vocab.items()},10)
         return topics

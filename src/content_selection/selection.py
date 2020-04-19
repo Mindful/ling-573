@@ -14,7 +14,7 @@ class Selection:
     def __init__(self,document_group_object,use_lda=False):
         self.doc_group = document_group_object
         self.USE_LDA = use_lda
-        #self.subtopics = self.lda()
+        self.subtopics = self.lda()
         self.selected_content = {
             article.id: [Content(span, None) for span in self.select(article)]  # will need to adjust here to add in weights correctly
             for article in document_group_object.articles
@@ -48,7 +48,6 @@ class Selection:
             for id in self.subtopics:
                 scores = sorted(self.topic_comparison(sentences,self.subtopics[id]).items(),key=lambda x:x[1],reverse=True)
                 selections.add(sentences[scores[0][0]])
-                break
             return tuple(selections)
         else:
             num_paragraphs = len(document_group_article.paragraphs)
