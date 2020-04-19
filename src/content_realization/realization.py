@@ -41,3 +41,38 @@ class Realization:
                 break
         return summary
 
+def trim(sentence):
+    '''
+    ** Trim sentences to reduce length and create a more focused summary **
+    ** Initial Inspiration taken from CLASSY 2006 **
+    :param sentence: spaCy span to be trimmed
+    :return: spaCy span, trimmed
+    '''
+    ## Initial ideas for trimming (from CLASSY 2006):
+    ## Extraneous Words (date lines, editor's comments, etc)
+    ## Adverbs and conjunctions at start of sentence
+    ## Small selection of words in the middle of sentences, like however and also (ambiguous...)
+    ## Ages
+    ## Relative Clause attributives (who, whom, which, when, where)
+    ## Attributions (the police said) at start or end of sentence when word is not a quote.
+    ####################################################
+    ## Other ideas (from wes):
+    ## email addresses?
+    ## lines that mention the publication source ('for use by clients of the NY times service')
+    ## sentences that are too short / too long (should probably be in selection).
+    #####################################################
+
+    ## Remove sentence-initial adverbs and conjunctions ##
+    pos = sentence[0].pos_
+    pos2 = sentence[0].pos
+    tag = sentence[0].tag
+    tag2 = sentence[0].tag_
+    if pos in ('CCONJ','ADV'):
+        sentence = sentence[1:]
+        if sentence[0].text == ',':
+            sentence = sentence[1:]
+    return sentence
+    ## Remove sentence-initial commas that might be there now ##
+
+
+
