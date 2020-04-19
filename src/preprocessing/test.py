@@ -56,7 +56,7 @@ class TestPreprocessing(unittest.TestCase):
     
         doc_group_article = DocGroupArticle(article)
 
-        self.assertEquals(len(doc_group_article.paragraphs), 3)
+        self.assertEqual(len(doc_group_article.paragraphs), 3)
 
 
     def test_doc_group_article_spacy_stuff(self):
@@ -73,35 +73,41 @@ class TestPreprocessing(unittest.TestCase):
         paragraph_1_noun_chunks = list(article_1_paragraph_1.noun_chunks)
 
         # sentences
-        self.assertEqual(len(paragraph_1_sents), 2)
+        self.assertEqual(len(paragraph_1_sents), 1)
         self.assertIs(type(paragraph_1_sents[0]), Span)
-        self.assertEqual(paragraph_1_sents[0].text, 'LITTLETON, Colo. (AP) --')
-        self.assertEqual(paragraph_1_sents[1].text, "The sheriff's initial estimate of as many as 25 dead in the Columbine High massacre was off the mark apparently because the six SWAT teams that swept the building counted some victims more than once.")
+        self.assertNotEqual(paragraph_1_sents[0].text, 'LITTLETON, Colo. (AP) --')
+        self.assertEqual(paragraph_1_sents[0].text, "The sheriff's initial estimate of as many as 25 dead in the Columbine High massacre was off the mark apparently because the six SWAT teams that swept the building counted some victims more than once.")
 
         # ents
         self.assertEqual(type(paragraph_1_ents[0]), Span)
-        self.assertEqual([ent.text for ent in paragraph_1_ents], ["LITTLETON", "Colo.", "AP", "as many as 25", "Columbine High", "six", "SWAT"])
+        self.assertEqual([ent.text for ent in paragraph_1_ents], ["as many as 25", "Columbine High", "six", "SWAT"])
 
         # noun_chucks
         self.assertEqual(type(paragraph_1_noun_chunks[0]), Span)
-        self.assertEqual([chunk.text for chunk in paragraph_1_noun_chunks], ["LITTLETON", "Colo. (AP", "The sheriff's initial estimate", "the Columbine High massacre", "the mark", "the six SWAT teams", "the building", "some victims"])
+        self.assertEqual([chunk.text for chunk in paragraph_1_noun_chunks], ["The sheriff's initial estimate", "the Columbine High massacre", "the mark", "the six SWAT teams", "the building", "some victims"])
 
         # cosine vector similarity comparisons
-        self.assertEqual(article_1_paragraph_1.text, "LITTLETON, Colo. (AP) -- The sheriff's initial estimate of as many as 25 dead in the Columbine High massacre was off the mark apparently because the six SWAT teams that swept the building counted some victims more than once.")
-        self.assertEqual(article_2_paragraph_1.text, "BURBANK, Calif. (AP) -- Republican presidential candidate Pat Buchanan says stricter gun laws could not have prevented the deadly school shootings in Littleton, Colo.")
+        self.assertEqual(article_1_paragraph_1.text, "The sheriff's initial estimate of as many as 25 dead in the Columbine High massacre was off the mark apparently because the six SWAT teams that swept the building counted some victims more than once.")
+        self.assertEqual(article_2_paragraph_1.text, "Republican presidential candidate Pat Buchanan says stricter gun laws could not have prevented the deadly school shootings in Littleton, Colo.")
         self.assertEqual(article_1_paragraph_2.text, "The discrepancy occurred because the SWAT teams that picked their way past bombs and bodies in an effort to secure building covered overlapping areas, said sheriff's spokesman Steve Davis.")
        
         paragraph_sim_1 = article_1_paragraph_1.similarity(article_2_paragraph_1)
-        self.assertEqual(paragraph_sim_1, 0.819380660099558)
+        self.assertEqual(paragraph_sim_1, 0.7906798944810245)
 
         paragraph_sim_2 = article_1_paragraph_1.similarity(article_1_paragraph_2)
-        self.assertEqual(paragraph_sim_2, 0.939751888684158)
+        self.assertEqual(paragraph_sim_2, 0.9508306138290268)
+
+
+    def test_cleaning_text_removes_AP_beginning(self):
+        text = "LITTLETON, Colo. (AP) -- The sheriff's initial estimate of as many as 25 dead in the Columbine High."
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "The sheriff's initial estimate of as many as 25 dead in the Columbine High.")
 
 
     def test_cleaning_text_removes_spurios_newline_chars(self):
-        text = "LITTLETON, Colo. (AP) -- The sheriff's initial estimate of as  \nmany as 25 dead in the Columbine High."
+        text = "The sheriff's initial estimate of as  \nmany as 25 dead in the Columbine High."
         cleaned = clean_text(text)
-        self.assertEqual(cleaned, "LITTLETON, Colo. (AP) -- The sheriff's initial estimate of as many as 25 dead in the Columbine High.")
+        self.assertEqual(cleaned, "The sheriff's initial estimate of as many as 25 dead in the Columbine High.")
 
 
     def test_cleaning_text_removes_spurios_newline_chars_touching_words(self):
@@ -115,6 +121,30 @@ class TestPreprocessing(unittest.TestCase):
         cleaned = clean_text(text)
         self.assertEqual(cleaned, "Pastors in Jonesboro, Ark., scene of an earlier school shooting")
 
+
+    def test_cleaning_text_removes_location(self):
+        text = "NEW YORK _ The Rev. Al Sharpton stepped to the microphone outside the Bronx County Couthouse and bellowed"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "The Rev. Al Sharpton stepped to the microphone outside the Bronx County Couthouse and bellowed")
+
+
+    def test_cleaning_text_removes_link(self):
+        text = "On the Net:"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_removes_link_2(self):
+        # not certain what would actually be desired here. delete the whole rest of the sentence? need to make sure it won't break the text in other use cases, if so
+        text = "http://ifats.org is the International Fat Applied Technology Society"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "is the International Fat Applied Technology Society")
+
+
+    def test_cleaning_text_removes_email_line(self):
+        text = "E-mail: triggp(at)nytimes.com.'"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
 
 
 if __name__ == '__main__':
