@@ -60,23 +60,38 @@ def process_text(text):
 def clean_text(text):
     # what all should happen here?
 
-    # ideas:
-    # * remove (or convert?) the location parenthetical that begins most articles, e.g. "LITTLETON, Colo. (AP) --"
-    text = re.sub(r'^.{0,50}\(AP\) (--)*', '', text) # remove (AP) -- and previous text for anything up to 50 chars from beginning of line
-    text = re.sub(r'^[A-Z | \w |,]*_', '', text) # remove location and underscore, e.g. "NEW YORK _"
+    # remove (or convert?) the location parenthetical that begins most articles, e.g. "LITTLETON, Colo. (AP) --"
+    text = re.sub(r'^.{0,50}\(AP\) (--)*', '', text) # remove (AP) -- and previous text for anything up to 50 chars from beginning of line, 
+    text = re.sub(r'^[A-Z]{2,}[, | \w |d]*\(\w+\)\s*--', '', text)  # remove loc e.g. BANGKOK, April 2 (Xinhua) --
+    text = re.sub(r'^\s*_+', '', text) # remove starting underscore, e.g. "_ The protocol obliges industrialized "
+    text = re.sub(r'^[A-Z]{2,}[A-Z | \w |, |.]*_', '', text) # remove location and underscore, e.g. "NEW YORK _", but don't remove "The letter _ seen by The Associated Press _ said senior leaders"
+    text = re.sub(r'^[A-Z]{0,50} --', '', text) # remove loc, e.g. ATLANTA --
+
 
     # taglines, websites, etc.
-    text = re.sub(r'^\w*on the net.*$', '', text, flags=re.IGNORECASE) # remove 'on the net' and everything following
+    text = re.sub(r'^\s*on the net.*$', '', text, flags=re.IGNORECASE) # remove 'on the net' and everything following
+    text = re.sub(r'.{0,50}e-?mail address is.{0,100}', '', text, flags=re.IGNORECASE)  # remove email line e.g. Bob Keefe's e-mail address is bkeefecoxnews.com
+    text = re.sub(r'^\s*e-?mail.{0,100}', '', text, flags=re.IGNORECASE)  # remove email and following up to 100 chars, e.g. E-mail: triggp(at)nytimes.com.
+    text = re.sub(r'\.\s*e-?mail.{0,100}', '.', text, flags=re.IGNORECASE)  # remove email and following up to 100 chars, e.g. E-mail: triggp(at)nytimes.com.
+    text = re.sub(r'^\s*story filed by.{0,100}', '', text, flags=re.IGNORECASE)  # remove e.g. Story Filed By Cox Newspapers
+    text = re.sub(r'^\s*for use by.{0,100}', '', text, flags=re.IGNORECASE)  # remove e.g. For Use By Clients of the New York Times News Service
+    text = re.sub(r'^\s*photos and graphics.{0,100}', '', text, flags=re.IGNORECASE)  # removes e.g. PHOTOS AND GRAPHICS:
+    text = re.sub(r'\s*phone:.{0,100}', '', text, flags=re.IGNORECASE)  # remove e.g. Phone: (888) 603-1036
+    text = re.sub(r'\s*pager:.{0,100}', '', text, flags=re.IGNORECASE)  # remove Pager: (800) 946-4645 (PIN 599-4539).
+    text = re.sub(r'^\s*technical problems.{0,100}', '', text, flags=re.IGNORECASE)  # remove e.g. TECHNICAL PROBLEMS:   Peter Trigg
+    text = re.sub(r'^\s*questions or.{0,100}', '', text, flags=re.IGNORECASE)  # remove e.g. QUESTIONS OR RERUNS:
+    text = re.sub(r'^\s*With photo.', '', text, flags=re.IGNORECASE)  # remove With photo.
     text = re.sub(r'^https?://\S+', '', text) # remove urls
-    text = re.sub(r'\w*e-?mail.{0,100}', '', text, flags=re.IGNORECASE)  # remove email and following up to 100 chars, e.g. E-mail: triggp(at)nytimes.com.
-    text = re.sub(r'^\w*story filed by.{0,100}', '', text, flags=re.IGNORECASE)  # remove e.g. Story Filed By Cox Newspapers
-    text = re.sub(r'^\w*for use by.{0,100}', '', text, flags=re.IGNORECASE)  # remove e.g. For Use By Clients of the New York Times News Service
-    text = re.sub(r'^\w*photos and graphics.{0,100}', '', text, flags=re.IGNORECASE)  # PHOTOS AND GRAPHICS:
-    text = re.sub(r'\w*phone:.{0,100}', '', text, flags=re.IGNORECASE)  # remove e.g. Phone: (888) 603-1036
-    text = re.sub(r'\w*pager:.{0,100}', '', text, flags=re.IGNORECASE)  # remove Pager: (800) 946-4645 (PIN 599-4539).
-    text = re.sub(r'^\w*technical problems.{0,100}', '', text, flags=re.IGNORECASE)  # remove e.g. TECHNICAL PROBLEMS:   Peter Trigg
+
+    text = re.sub(r'^\s*with\s*[\w | -]{0,50}.?$', '', text, flags=re.IGNORECASE)            # e.g. With a map-graphic., With, With map.
+
+    # total junk, no idea
+    text = re.sub(r'^\s*[A-Za-z]*\/[A-Za-z0-9]*$', '', text)   # remove e.g. po/pi04, em/ea04
 
 
+
+    # standarize quotation marks, i.e. `` -> ''
+    text = re.sub("``", "''", text)  # ``It's like a prison in there,'' said Jessica Miller, 15.
 
     # * remove spurious line breaks 
     text = re.sub('\s+\\n', ' ', text)

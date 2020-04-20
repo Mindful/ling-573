@@ -122,6 +122,18 @@ class TestPreprocessing(unittest.TestCase):
         self.assertEqual(cleaned, "Pastors in Jonesboro, Ark., scene of an earlier school shooting")
 
 
+    def test_cleaning_text_doesnt_remove_non_location(self):
+        text = "The letter _ seen by The Associated Press _ said senior leaders of the People's War Group, and a smaller rebel group Janashakti would come to the state capital of Hyderabad for talks on Oct. 13."
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "The letter _ seen by The Associated Press _ said senior leaders of the People's War Group, and a smaller rebel group Janashakti would come to the state capital of Hyderabad for talks on Oct. 13.")
+
+
+    def test_cleaning_text_remove_intro_underscore(self):
+        text = "_ The protocol obliges industrialized countries to cut or limit emissions of carbon dioxide and other greenhouse gases by an average 5.2 percent from 1990 levels by 2012. These gases are believed to trap heat in the atmosphere, warming the Earth."
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "The protocol obliges industrialized countries to cut or limit emissions of carbon dioxide and other greenhouse gases by an average 5.2 percent from 1990 levels by 2012. These gases are believed to trap heat in the atmosphere, warming the Earth.")
+
+
     def test_cleaning_text_removes_location(self):
         text = "NEW YORK _ The Rev. Al Sharpton stepped to the microphone outside the Bronx County Couthouse and bellowed"
         cleaned = clean_text(text)
@@ -138,6 +150,24 @@ class TestPreprocessing(unittest.TestCase):
         text = "KHARTOUM, Sudan _ The Rev. Al Sharpton stepped to the microphone outside the Bronx County Couthouse and bellowed"
         cleaned = clean_text(text)
         self.assertEqual(cleaned, "The Rev. Al Sharpton stepped to the microphone outside the Bronx County Couthouse and bellowed")
+
+    
+    def test_cleaning_text_removes_location_4(self):
+        text = "LITTLETON, Colo. _ Lynda Pasma and Kerry Herurlin stopped halfway down Mt. Columbine on Saturday morning to pray."
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "Lynda Pasma and Kerry Herurlin stopped halfway down Mt. Columbine on Saturday morning to pray.")
+
+    
+    def test_cleaning_text_removes_location_5(self):
+        text = "BANGKOK, April 2 (Xinhua) -- Lynda Pasma and Kerry Herurlin stopped halfway"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "Lynda Pasma and Kerry Herurlin stopped halfway")
+
+    
+    def test_cleaning_text_removes_location_6(self):
+        text = "ATLANTA -- When John and Patsy Ramsey hired lawyers after their daughter, JonBenet, was killed and then distanced themselves from police, it didn't sit right with Nancy Gordon."
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "When John and Patsy Ramsey hired lawyers after their daughter, JonBenet, was killed and then distanced themselves from police, it didn't sit right with Nancy Gordon.")
 
 
     def test_cleaning_text_removes_link(self):
@@ -157,6 +187,24 @@ class TestPreprocessing(unittest.TestCase):
         text = "E-mail: triggp(at)nytimes.com.'"
         cleaned = clean_text(text)
         self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_removes_email_line_2(self):
+        text = "Bob Keefe's e-mail address is bkeefecoxnews.com"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_removes_email_line_3(self):
+        text = "Hal McCoy writes for the Dayton Daily News. E-mail: hmccoyDaytonDailyNews.com"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "Hal McCoy writes for the Dayton Daily News.")
+
+
+    def test_cleaning_text_doesnt_remove_real_email_content(self):
+        text = "Va. Bill Targets Some 'Junk' E-Mail"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "Va. Bill Targets Some 'Junk' E-Mail")
 
 
     def test_cleaning_text_removes_story_filed_by(self):
@@ -190,6 +238,48 @@ class TestPreprocessing(unittest.TestCase):
 
     def test_cleaning_text_removes_photos(self):
         text = "PHOTOS AND GRAPHICS:"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_removes_questions_or(self):
+        text = "QUESTIONS OR RERUNS:"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_removes_with_photo(self):
+        text = "With photo."
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_standardize_quote_marks(self):
+        text = "``It's like a prison in there,'' said Jessica Miller, 15."
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "''It's like a prison in there,'' said Jessica Miller, 15.")
+
+
+    def test_cleaning_text_remove_underscore_line(self):
+        text = "___"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_remove_junk(self):
+        text = "po/pi04"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_with_weirdness(self):
+        text = "With a map-graphic."
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_with_weirdness_2(self):
+        text = "With"
         cleaned = clean_text(text)
         self.assertEqual(cleaned, "")
 
