@@ -42,10 +42,13 @@ def remove_redundant_sents(content_objs):
 
 
 def is_redundant(sent_1, sent_2):
+    if sent_1.has_vector and sent_2.has_vector:
+
     # stripping down to lemmas and removing stop words did NOT seem to help i.e. nlp(" ".join([tok.lemma_ for tok in sent_1 if tok.text not in spacy_stopwords and not tok.is_punct]))
     # might consider adding comparison of doc.ents or doc.noun_chunk overlap
     # current value (0.87) is chosen by manual inspection of ~20 sentence pairs
-    return sent_1.similarity(sent_2) > 0.87
+        return sent_1.similarity(sent_2) > 0.87
+    return False
 
 
 def parse_date_from_article_id(article_id):
