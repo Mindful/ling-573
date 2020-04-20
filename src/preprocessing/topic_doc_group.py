@@ -62,11 +62,12 @@ def clean_text(text):
 
     # remove (or convert?) the location parenthetical that begins most articles, e.g. "LITTLETON, Colo. (AP) --"
     text = re.sub(r'^.{0,50}\(AP\) (--)*', '', text) # remove (AP) -- and previous text for anything up to 50 chars from beginning of line, 
-    text = re.sub(r'^[A-Z]{2,}[, | \w |d]*\(\w+\)\s*--', '', text)  # remove loc e.g. BANGKOK, April 2 (Xinhua) --
+    text = re.sub(r'^[A-Z]{2,}[, | \w |\d]*\(\w+\)\s*--', '', text)  # remove loc e.g. BANGKOK, April 2 (Xinhua) --
+    text = re.sub(r'^.{0,50}\(JP\):? (--)*', '', text) # remove (JP) -- and previous text for anything up to 50 chars from beginning of line, e.g JAKARTA (JP)
+    text = re.sub(r'^[A-Z|\- |\.|\s]{2,100}\(.+\)\s*_', '', text)  # remove loc e.g.   FED-GREENSPAN (Undated) _ 
     text = re.sub(r'^\s*_+', '', text) # remove starting underscore, e.g. "_ The protocol obliges industrialized "
     text = re.sub(r'^[A-Z]{2,}[A-Z | \w |, |.]*_', '', text) # remove location and underscore, e.g. "NEW YORK _", but don't remove "The letter _ seen by The Associated Press _ said senior leaders"
     text = re.sub(r'^[A-Z]{0,50} --', '', text) # remove loc, e.g. ATLANTA --
-
 
     # taglines, websites, etc.
     text = re.sub(r'^\s*on the net.*$', '', text, flags=re.IGNORECASE) # remove 'on the net' and everything following
@@ -83,11 +84,20 @@ def clean_text(text):
     text = re.sub(r'^\s*With photo.', '', text, flags=re.IGNORECASE)  # remove With photo.
     text = re.sub(r'^https?://\S+', '', text) # remove urls
 
-    text = re.sub(r'^\s*with\s*[\w | -]{0,50}.?$', '', text, flags=re.IGNORECASE)            # e.g. With a map-graphic., With, With map.
 
     # total junk, no idea
-    text = re.sub(r'^\s*[A-Za-z]*\/[A-Za-z0-9]*$', '', text)   # remove e.g. po/pi04, em/ea04
+    text = re.sub(r'^\s*[A-Za-z]*\/[A-Za-z0-9]*$', '', text) # remove e.g. po/pi04, em/ea04
+    text = re.sub(r'^\s*nn\s*$', '', text)  # remove nn lines
+    text = re.sub(r'^\s*(\s*-\s*)+\s*$', '', text)  # remove  - - - - lines
 
+
+    # news things
+    text = re.sub(r'^\s*with\s*[\w | -]{0,50}.?$', '', text, flags=re.IGNORECASE) # e.g. With a map-graphic., With, With map.
+    text = re.sub(r'^[\w|\s]*NewsBrief by.{0,100}$', '', text, flags=re.IGNORECASE) # e.g. AP NewsBrief by GABRIEL MADWAY
+    text = re.sub(r'^ENDIT$', '', text)  # remove ENDIT
+    text = re.sub(r'^\(Begin optional trim\)$', '', text)  # remove (Begin optional trim)
+    text = re.sub(r'^\(Optional add end\)$', '', text)  # remove (Optional add end)
+    text = re.sub(r'^\(STORY CAN END HERE. OPTIONAL MATERIAL FOLLOWS\)$', '', text)  # remove (Optional add end)
 
 
     # standarize quotation marks, i.e. `` -> ''
@@ -97,9 +107,6 @@ def clean_text(text):
     text = re.sub('\s+\\n', ' ', text)
     text = re.sub('(\S+)\\n', r'\1 ', text)
 
-
-    # * possibly remove quotes?
-    # * remove taglines, e.g. "BY/ By/ Source, etc."
     return text.strip()
 
 

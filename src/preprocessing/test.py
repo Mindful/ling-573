@@ -170,6 +170,18 @@ class TestPreprocessing(unittest.TestCase):
         self.assertEqual(cleaned, "When John and Patsy Ramsey hired lawyers after their daughter, JonBenet, was killed and then distanced themselves from police, it didn't sit right with Nancy Gordon.")
 
 
+    def test_cleaning_text_removes_location_7(self):
+        text = "FED-GREENSPAN (Undated) _  When John and Patsy Ramsey hired lawyers after their daughter, JonBenet, was killed and then distanced themselves from police, it didn't sit right with Nancy Gordon."
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "When John and Patsy Ramsey hired lawyers after their daughter, JonBenet, was killed and then distanced themselves from police, it didn't sit right with Nancy Gordon.")
+
+    
+    def test_cleaning_text_removes_location_8(self):
+        text = "KOSOVO-U.S. (Washington) _ When John and Patsy Ramsey hired lawyers after their daughter, JonBenet, was killed and then distanced themselves from police, it didn't sit right with Nancy Gordon."
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "When John and Patsy Ramsey hired lawyers after their daughter, JonBenet, was killed and then distanced themselves from police, it didn't sit right with Nancy Gordon.")
+
+
     def test_cleaning_text_removes_link(self):
         text = "On the Net:"
         cleaned = clean_text(text)
@@ -280,6 +292,48 @@ class TestPreprocessing(unittest.TestCase):
 
     def test_cleaning_text_with_weirdness_2(self):
         text = "With"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_end_it(self):
+        text = "With"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_news_briefing(self):
+        text = "AP NewsBrief by GABRIEL MADWAY"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_dashes(self):
+        text = "- - - - "
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_optional_add_trim(self):
+        text = "(Begin optional trim)"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_optional_add_end(self):
+        text = "(Optional add end)"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_endit(self):
+        text = "ENDIT"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_can_end_here(self):
+        text = "(STORY CAN END HERE. OPTIONAL MATERIAL FOLLOWS)"
         cleaned = clean_text(text)
         self.assertEqual(cleaned, "")
 
