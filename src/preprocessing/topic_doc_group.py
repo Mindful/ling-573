@@ -62,13 +62,21 @@ def clean_text(text):
 
     # ideas:
     # * remove (or convert?) the location parenthetical that begins most articles, e.g. "LITTLETON, Colo. (AP) --"
-    text = re.sub(r'^.{0,50}\(AP\) --', '', text) # remove (AP) -- and previous text for anything up to 50 chars from beginning of line
-    text = re.sub(r'^[A-Z | \w]*_', '', text) # remove location and underscore, e.g. "NEW YORK _"
+    text = re.sub(r'^.{0,50}\(AP\) (--)*', '', text) # remove (AP) -- and previous text for anything up to 50 chars from beginning of line
+    text = re.sub(r'^[A-Z | \w |,]*_', '', text) # remove location and underscore, e.g. "NEW YORK _"
 
     # taglines, websites, etc.
     text = re.sub(r'^\w*on the net.*$', '', text, flags=re.IGNORECASE) # remove 'on the net' and everything following
     text = re.sub(r'^https?://\S+', '', text) # remove urls
-    text = re.sub(r'\w*E-?mail.{0,100}', '', text, flags=re.IGNORECASE)  # remove email and following up to 100 chars, e.g. E-mail: triggp(at)nytimes.com.
+    text = re.sub(r'\w*e-?mail.{0,100}', '', text, flags=re.IGNORECASE)  # remove email and following up to 100 chars, e.g. E-mail: triggp(at)nytimes.com.
+    text = re.sub(r'^\w*story filed by.{0,100}', '', text, flags=re.IGNORECASE)  # remove e.g. Story Filed By Cox Newspapers
+    text = re.sub(r'^\w*for use by.{0,100}', '', text, flags=re.IGNORECASE)  # remove e.g. For Use By Clients of the New York Times News Service
+    text = re.sub(r'^\w*photos and graphics.{0,100}', '', text, flags=re.IGNORECASE)  # PHOTOS AND GRAPHICS:
+    text = re.sub(r'\w*phone:.{0,100}', '', text, flags=re.IGNORECASE)  # remove e.g. Phone: (888) 603-1036
+    text = re.sub(r'\w*pager:.{0,100}', '', text, flags=re.IGNORECASE)  # remove Pager: (800) 946-4645 (PIN 599-4539).
+    text = re.sub(r'^\w*technical problems.{0,100}', '', text, flags=re.IGNORECASE)  # remove e.g. TECHNICAL PROBLEMS:   Peter Trigg
+
+
 
     # * remove spurious line breaks 
     text = re.sub('\s+\\n', ' ', text)
