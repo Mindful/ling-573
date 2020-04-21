@@ -7,8 +7,8 @@ class LDA:
     def __init__(self,document_group_object):
         self.docs = document_group_object
         self.vocab = self.get_vocab(self.docs)
-        self.num_topics = 5
-        self.num_words = 10
+        self.num_topics = 2
+        self.num_words = 8
         self.subtopics = self.run()
 
     def accept_token(self,token):
