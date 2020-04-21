@@ -52,16 +52,17 @@ def _fetch_articles_into_topics(queries, topic_metadatas):
     bar = Bar('Reading files...', max=len(queries))
     for corpus_file, query_list in queries.items():
         file_articles = corpus_file.get_articles()
-        article_id_to_query = {q.article_id: q for q in query_list}
+        article_id_to_query = {q.full_article_id: q for q in query_list}
         for article in file_articles:
-            article_id = article.id[-4:]
-            if article_id in article_id_to_query:
-                topic = article_id_to_query[article_id].topic_id
+            full_article_id = article.id
+            if full_article_id in article_id_to_query:
+                topic = article_id_to_query[full_article_id].topic_id
                 if topic not in articles_by_topic:
                     articles_by_topic[topic] = []
 
                 articles_by_topic[topic].append(article)
-                del article_id_to_query[article_id]
+                del article_id_to_query[full_article_id]
+        assert(len(article_id_to_query) == 0)  # We must get all the articles we're looking for
         bar.next()
 
     topic_metadata_by_id = {t.id: t for t in topic_metadatas}

@@ -7,6 +7,7 @@ DIGIT_REGEX = re.compile(r'\d')
 
 class ArticleQuery:
     def __init__(self, text, topic_id):
+        self.full_article_id = text
         querystring, self.article_id = text.split('.')
         if querystring.find('_') == -1:
             # squished ID format, needs to be handled differently
