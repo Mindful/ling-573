@@ -27,11 +27,31 @@ def read_new_content_file(filename):
 
     return [Article.from_new_xml(x) for x in root]
 
+# as per acquaint.dtd
+ENTITIES = {
+    "AMP": "&amp;",  # to get '&', replace with xml ampersand
+    "Cx14": "",
+    "Cx13": "",
+    "Cx12": "",
+    "Cx11": "",
+    "Cx1f": "",
+    "HT": "",
+    "QL": "",
+    "QR": "",
+    "LR": "",
+    "UR": "",
+    "QC": ""
+}
+
 
 def read_old_content_file(filename):
     parser = ET.XMLParser(recover=True)
     with open(filename, 'r') as f:
         file_content = f.read()
+
+    for entity, value in ENTITIES.items():
+        target = '&'+entity+';'
+        file_content = file_content.replace(target, value)
 
     root = ET.fromstring('<dummy>'+file_content+'</dummy>', parser=parser)
 
