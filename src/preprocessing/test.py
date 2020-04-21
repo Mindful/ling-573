@@ -175,9 +175,15 @@ class TestPreprocessing(unittest.TestCase):
         cleaned = clean_text(text)
         self.assertEqual(cleaned, "When John and Patsy Ramsey hired lawyers after their daughter, JonBenet, was killed and then distanced themselves from police, it didn't sit right with Nancy Gordon.")
 
-    
+
     def test_cleaning_text_removes_location_8(self):
         text = "KOSOVO-U.S. (Washington) _ When John and Patsy Ramsey hired lawyers after their daughter, JonBenet, was killed and then distanced themselves from police, it didn't sit right with Nancy Gordon."
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "When John and Patsy Ramsey hired lawyers after their daughter, JonBenet, was killed and then distanced themselves from police, it didn't sit right with Nancy Gordon.")
+
+
+    def test_cleaning_text_removes_location_9(self):
+        text = "WEST-PALM BEACH, Fla. -- When John and Patsy Ramsey hired lawyers after their daughter, JonBenet, was killed and then distanced themselves from police, it didn't sit right with Nancy Gordon."
         cleaned = clean_text(text)
         self.assertEqual(cleaned, "When John and Patsy Ramsey hired lawyers after their daughter, JonBenet, was killed and then distanced themselves from police, it didn't sit right with Nancy Gordon.")
 
@@ -188,11 +194,16 @@ class TestPreprocessing(unittest.TestCase):
         self.assertEqual(cleaned, "")
 
 
-    def test_cleaning_text_removes_link_2(self):
-        # not certain what would actually be desired here. delete the whole rest of the sentence? need to make sure it won't break the text in other use cases, if so
+    def test_cleaning_text_doesnt_remove_link_2(self):
+        text = "http://ifats.org"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_doesnt_remove_link_in_sentence(self):
         text = "http://ifats.org is the International Fat Applied Technology Society"
         cleaned = clean_text(text)
-        self.assertEqual(cleaned, "is the International Fat Applied Technology Society")
+        self.assertEqual(cleaned, "http://ifats.org is the International Fat Applied Technology Society")
 
 
     def test_cleaning_text_removes_email_line(self):
@@ -336,6 +347,60 @@ class TestPreprocessing(unittest.TestCase):
         text = "(STORY CAN END HERE. OPTIONAL MATERIAL FOLLOWS)"
         cleaned = clean_text(text)
         self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_website(self):
+        text = "www.nejm.org"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_email_4(self):
+        text = "(E-mail: hrosenfeldtimesunion.com.)"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_remove_junk_2(self):
+        text = "sn-sjs"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_remove_junk_3(self):
+        text = "(mb-mn/pp)"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_remove_junk_4(self):
+        text = "."
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_remove_junk_5(self):
+        text = "(pd-fg/imj)"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_remove_junk_6(self):
+        text = "js04"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_remove_junk_7(self):
+        text = "(lc/ml)"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_text_remove_initial_filler(self):
+        text = "BKN-PREVIEW-WEST (Undated) There is a"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "There is a")
 
 
 if __name__ == '__main__':
