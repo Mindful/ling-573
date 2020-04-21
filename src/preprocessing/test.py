@@ -280,7 +280,7 @@ class TestPreprocessing(unittest.TestCase):
     def test_cleaning_text_standardize_quote_marks(self):
         text = "``It's like a prison in there,'' said Jessica Miller, 15."
         cleaned = clean_text(text)
-        self.assertEqual(cleaned, "''It's like a prison in there,'' said Jessica Miller, 15.")
+        self.assertEqual(cleaned, "\"It's like a prison in there,\" said Jessica Miller, 15.")
 
 
     def test_cleaning_text_remove_underscore_line(self):
@@ -401,6 +401,12 @@ class TestPreprocessing(unittest.TestCase):
         text = "BKN-PREVIEW-WEST (Undated) There is a"
         cleaned = clean_text(text)
         self.assertEqual(cleaned, "There is a")
+
+
+    def test_cleaning_text_standardize_quote_marks_nested(self):
+        text = "``Having exercised that right, they cannot then say, `We're police officers, therefore what we did was OK,''' he said."
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "\"Having exercised that right, they cannot then say, 'We're police officers, therefore what we did was OK,'\" he said.")
 
 
 if __name__ == '__main__':

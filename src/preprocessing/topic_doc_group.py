@@ -107,8 +107,11 @@ def clean_text(text):
     text = re.sub(r'^\(STORY CAN END HERE. OPTIONAL MATERIAL FOLLOWS\)$', '', text)  # remove (Optional add end)
 
 
-    # standarize quotation marks, i.e. `` -> ''
-    text = re.sub("``", "''", text)  # ``It's like a prison in there,'' said Jessica Miller, 15.
+    # standarize quotation marks, i.e. `` -> "   and '' -> "
+    text = re.sub("([^`])`([^`])", r"\1'\2", text) # deal with opening nested quotes, e.g. ``Having exercised that right, they cannot then say, `We're police officers, therefore what we did was OK,''' he said.
+    text = re.sub("'''", "'\"", text) # deal with closing nested quotes
+    text = re.sub("``", '"', text)  # ``It's like a... 
+    text = re.sub("''", '"', text)  #  ...like a prison in there,'' said Jessica Miller, 15.
 
     # * remove spurious line breaks 
     text = re.sub('\s+\\n', ' ', text)
