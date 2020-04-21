@@ -1,7 +1,7 @@
 import os
 import pickle
 from data.article import ArticleQuery, Article
-from data.corpora import CORPORA
+from data.corpora import Aquaint, Aquaint2
 from data.topic import Topic, read_topics_file
 from progress.bar import Bar
 from common import *
@@ -18,17 +18,20 @@ OUTPUT_FILE_REGEX = re.compile(r'.*' + re.escape(OUTPUT_FILE_STRING) + r'.*')
 DEV_TEST = 'dev_test'
 TRAIN = 'train'
 
-DATASETS = {
-    DEV_TEST: '/dropbox/19-20/573/Data/Documents/devtest/GuidedSumm10_test_topics.xml',
-    TRAIN: '/dropbox/19-20/573/Data/Documents/training/2009/UpdateSumm09_test_topics.xml'
-}
+
+class DataManager:
+    corpora = [Aquaint(), Aquaint2()]
+    datasets = {
+        DEV_TEST: '/dropbox/19-20/573/Data/Documents/devtest/GuidedSumm10_test_topics.xml',
+        TRAIN: '/dropbox/19-20/573/Data/Documents/training/2009/UpdateSumm09_test_topics.xml'
+    }
 
 
 def _compute_queries_by_file(topic_datas):
     queries = [ArticleQuery(article, topic.id) for topic in topic_datas for article in topic.docset]
 
     corpora_by_year = {}
-    for corpus in CORPORA:
+    for corpus in DataManager.corpora:
         for year in corpus.year_range:
             corpora_by_year[year] = corpus
 
@@ -87,10 +90,10 @@ def output_summary(realization):
 
 
 def get_dataset_topics(dataset):
-    if dataset not in DATASETS:
+    if dataset not in DataManager.datasets:
         raise RuntimeError("Unknown dataset, please use one of the dataset constants.")
 
-    dataset_location = DATASETS[dataset]
+    dataset_location = DataManager.datasets[dataset]
     pickle_name = os.path.basename(dataset_location) + '.pickle'
     local_location = os.path.join(DATA_DIR, pickle_name)
 

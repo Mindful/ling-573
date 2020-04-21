@@ -39,6 +39,8 @@ def read_old_content_file(filename):
 
 
 class Corpus(ABC):
+    base_directory = '/corpora/LDC/'
+
     def __init__(self, name, start_year, end_year, directory):
         self.year_range = range(start_year, end_year+1)  # include final year
         self.name = name
@@ -56,8 +58,8 @@ class Corpus(ABC):
 
 
 class Aquaint(Corpus):
-    def __init__(self):
-        super().__init__('AQUAINT', 1996, 2000, '/corpora/LDC/LDC02T31/')
+    def __init__(self, base_dir=Corpus.base_directory):
+        super().__init__('AQUAINT', 1996, 2000, os.path.join(base_dir, 'LDC02T31/'))
         self.reader_function = read_old_content_file
 
     def get_journal_dir(self, query):
@@ -76,8 +78,8 @@ class Aquaint2(Corpus):
 
     lang_id = 'eng'
 
-    def __init__(self):
-        super().__init__('AQUAINT-2', 2004, 2006, '/corpora/LDC/LDC08T25/data/')
+    def __init__(self, base_dir=Corpus.base_directory):
+        super().__init__('AQUAINT-2', 2004, 2006, os.path.join(base_dir, 'LDC08T25/data/'))
         self.reader_function = read_new_content_file
 
     def get_journal_dir(self, query):
@@ -86,5 +88,3 @@ class Aquaint2(Corpus):
     def get_filename(self, query):
         return ''.join([query.journal_id.lower(), '_', self.lang_id, '_', query.file_id[:-2], '.xml'])
 
-
-CORPORA = [Aquaint(), Aquaint2()]
