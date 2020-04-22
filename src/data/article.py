@@ -36,6 +36,9 @@ class Article:
         self.headline = headline
         self.paragraphs = paragraphs
 
+    def get_raw_text(self):
+        return ' '.join(self.paragraphs)
+
     def __repr__(self):
         return self.__dict__.__repr__()
 
@@ -45,7 +48,7 @@ class Article:
         type = get_child_text(xml_object, 'DOCTYPE')
         headline = get_child_text(xml_object, 'HEADER')
         text_obj = get_child(get_child(xml_object, 'BODY'), 'TEXT')
-        paragraphs = [x.text.strip() for x in text_obj]
+        paragraphs = [x.text.strip() for x in text_obj if x.text is not None]
 
         raw_text = text_obj.text.strip()
         if raw_text:
@@ -60,7 +63,7 @@ class Article:
         type = xml_object.attrib['type']
         headline = get_child_text(xml_object, 'HEADLINE')
         text_obj = get_child(xml_object, 'TEXT')
-        paragraphs = [x.text.strip() for x in text_obj]
+        paragraphs = [x.text.strip() for x in text_obj if x.text is not None]
 
         raw_text = text_obj.text.strip()
         if raw_text:

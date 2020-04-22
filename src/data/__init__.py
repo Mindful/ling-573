@@ -27,6 +27,13 @@ class DataManager:
     }
 
 
+def configure_local(directory):
+    for name, location in DataManager.datasets.items():
+        DataManager.datasets[name] = os.path.join(directory, os.path.basename(location))
+
+    DataManager.corpora = [Aquaint(directory), Aquaint2(directory)]
+
+
 def _compute_queries_by_file(topic_datas):
     queries = [ArticleQuery(article, topic.id) for topic in topic_datas for article in topic.docset]
 
@@ -88,6 +95,29 @@ def _write_out_summary(topic_id, summary_sentences, alphanum_id='1'):
 def output_summary(realization):
     _write_out_summary(realization.doc_group.topic_id, realization.summary)
     pass
+
+
+def load_all_articles(corpus):
+    files = corpus.get_all_files()
+    bar = Bar('Loading articles from files...', max=len(files))
+    output = []
+    for f in files:
+        output.extend(f.get_articles())
+        bar.next()
+
+    bar.finish()
+    return output
+
+
+def load_sample_articles(corpus, count=20):
+    files = corpus.get_all_files()[0:count]
+    output = []
+    for f in files:
+        output.extend(f.get_articles())
+
+    return output
+
+
 
 
 def get_dataset_topics(dataset):

@@ -72,9 +72,20 @@ class Corpus(ABC):
     def get_filename(self, query):
         raise RuntimeError("NYI")
 
+    def valid_file(self, filename):
+        raise RuntimeError("NYI")
+
     def get_file_location(self, query):
         file_location = os.path.join(self.get_journal_dir(query), self.get_filename(query))
         return CorpusFile(file_location, self.reader_function)
+
+    def get_all_files(self):
+        all_file_locations = []
+        for dir, subdirs, subfiles in os.walk(self.directory):
+            all_file_locations.extend(os.path.join(dir, f) for f in subfiles if self.valid_file(f))
+
+        return [CorpusFile(file_location, self.reader_function) for file_location in all_file_locations]
+
 
 
 class Aquaint(Corpus):
@@ -93,6 +104,9 @@ class Aquaint(Corpus):
             string_parts.append('_ENG')
         return os.path.join(parent_dir, ''.join(string_parts))
 
+    def valid_file(self, filename):
+        return filename[-3:] == 'NYT' or filename[-4:] == '_ENG'
+
 
 class Aquaint2(Corpus):
 
@@ -107,4 +121,7 @@ class Aquaint2(Corpus):
 
     def get_filename(self, query):
         return ''.join([query.journal_id.lower(), '_', self.lang_id, '_', query.file_id[:-2], '.xml'])
+
+    def valid_file(self, filename):
+        return filename[-3:] == '.xml'
 
