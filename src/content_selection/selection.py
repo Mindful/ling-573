@@ -44,10 +44,13 @@ class Selection:
         """
         if self.USE_LDA:
             sentences = self.get_sentences(document_group_article)
-            selections = set([])
+
+            indicies = set([])
             for id in self.subtopics:
                 scores = sorted(self.topic_comparison(sentences,self.subtopics[id]).items(),key=lambda x:x[1],reverse=True)
-                selections.add(sentences[scores[0][0]])
+                #selections.add(sentences[scores[0][0]])
+                indicies.add(scores[0][0])
+            selections = set([sentences[i] for i in sorted(indicies)])
             return tuple(selections)
         else:
             num_paragraphs = len(document_group_article.paragraphs)
