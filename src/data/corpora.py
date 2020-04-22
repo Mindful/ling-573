@@ -123,5 +123,5 @@ class Aquaint2(Corpus):
         return ''.join([query.journal_id.lower(), '_', self.lang_id, '_', query.file_id[:-2], '.xml'])
 
     def valid_file(self, filename):
-        return filename[-3:] == '.xml'
+        return filename[-4:] == '.xml'
 
