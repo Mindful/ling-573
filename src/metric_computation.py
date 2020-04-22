@@ -12,8 +12,10 @@ import csv
 
 WORD_FREQ_BY_DOC = 'word_freq_by_doc'
 
+
 def metric_file_name(metric_name, corpus):
     return os.path.join(DATA_DIR, corpus.name + '_' + metric_name)
+
 
 def compute_word_counts_by_doc(corpus):
 
@@ -37,9 +39,6 @@ def compute_word_counts_by_doc(corpus):
             if not (token.is_punct or token.is_stop or token.like_num or token.like_url or token.like_email):
                 word_counts[article_id][token.lower_] +=1
         bar.next()
-
-    with open(metric_file_name(WORD_FREQ_BY_DOC, corpus), 'wb') as picklefile:
-        pickle.dump(word_counts, picklefile)
 
     bar.finish()
     print('Vectorizing...')
