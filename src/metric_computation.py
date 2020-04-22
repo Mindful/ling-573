@@ -22,8 +22,7 @@ def compute_word_counts_by_doc(corpus):
     print('Loading spaCy...')
     tokenizer = spacy.load("en_core_web_lg", disable=['tagger', 'parser', 'ner'])
 
-    #articles = load_all_articles(corpus)
-    articles = load_sample_articles(corpus, count=2)
+    articles = load_all_articles(corpus)
     textblob_by_id = {
         article.id: ' '.join(article.paragraphs) for article in articles
     }
