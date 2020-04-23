@@ -18,29 +18,26 @@ class Metrics:
     def get_entities(self,document):
         return None
 
+    def sent2words(self,sent):
+        return [str(token).lower() for token in sent if self.accept_token(token)]
+
     def doc2sents(self,document):
-        sentences = [[str(token).lower() for paragraph in document.paragraphs
-                                        for sentence in paragraph.sents
-                                            for token in sentence
-                                                if self.accept_token(token)]]
+        sentences = [self.sent2words(sentence)  for paragraph in document.paragraphs for sentence in paragraph.sents]
 
         return sentences, self.get_entities(document)
-
-
-
 
     def get_grams(self):
         unigrams = {}
         bigrams = {}
         num_unigrams = 0
         num_bigrams = 0
-        for document in self.documents:
-            sentences = self.doc2sents(document)
+        for document in self.documents.articles:
+            sentences, ent = self.doc2sents(document)
             for s in sentences:
                 num_unigrams += len(s)
                 num_bigrams += (len(s)-1)
                 for i in range(len(s)):
-                    unigram = s[i]
+                    unigram = str(s[i])
                     if i > 0:
                         bigram = s[i-1] + ' ' + unigram
                         bigrams.setdefault(bigram,0)
@@ -53,3 +50,15 @@ class Metrics:
         unigrams = {unigram:(unigrams[unigram]/num_unigrams) for unigram in unigrams}
         bigrams = {bigram: (bigrams[bigram] / num_bigrams) for bigram in bigrams}
         return unigrams, bigrams
+
+    def unigram_score(self,sentence):
+        probas = np.array([self.unigrams[word] for word in sentence])
+        return np.sum(probas)
+
+    def bigram_score(self,sentence):
+        bigrams = [sentence[i-1] + ' ' + sentence[i] for i in range(1,len(sentence))]
+        probas = np.array([ self.bigrams[bigram] for bigram in bigrams])
+        return np.sum(probas)
+
+    def score(self,sentence,lambda1,lambda2):
+        return lambda1*self.unigram_score(self.sent2words(sentence)) + lambda2*self.bigram_score(self.sent2words(sentence))
