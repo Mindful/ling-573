@@ -51,14 +51,19 @@ class Metrics:
         bigrams = {bigram: (bigrams[bigram] / num_bigrams) for bigram in bigrams}
         return unigrams, bigrams
 
-    def unigram_score(self,sentence):
-        probas = np.array([self.unigrams[word] for word in sentence])
+    def unigram_score(self,sentence, headline):
+        probas = np.array([self.unigrams[word] if not word in str(headline).lower() else self.unigrams[word]*1 for word in sentence])
         return np.sum(probas)
 
-    def bigram_score(self,sentence):
+    def bigram_score(self,sentence, headline):
         bigrams = [sentence[i-1] + ' ' + sentence[i] for i in range(1,len(sentence))]
-        probas = np.array([ self.bigrams[bigram] for bigram in bigrams])
+        probas = np.array([ self.bigrams[bigram] if not bigram in str(headline).lower() else self.bigrams[bigram]*1 for bigram in bigrams])
         return np.sum(probas)
 
-    def score(self,sentence,lambda1,lambda2):
-        return lambda1*self.unigram_score(self.sent2words(sentence)) + lambda2*self.bigram_score(self.sent2words(sentence))
+    def headline_score(self,sentence,headline):
+        overlap = 0.0
+        total_uni = None
+        return None
+
+    def score(self,sentence, headline, lambda1,lambda2):
+        return lambda1*self.unigram_score(self.sent2words(sentence),headline) + lambda2*self.bigram_score(self.sent2words(sentence),headline)

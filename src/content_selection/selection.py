@@ -55,16 +55,14 @@ class Selection:
             return tuple(selections)
 
         elif self.USE_NGRAM:
-
-
-
-
+            headline = document_group_article.headline
             sentences = self.get_sentences(document_group_article)
             NUM_SENTENCES = min(2,len(sentences))
 
-            scores = sorted([(i,self.METRICS.score(sentences[i],0.3,0.7)) for i in range(len(sentences))],key=lambda x:x[1],reverse=True)
-
+            scores = sorted([(i,self.METRICS.score(sentences[i],headline,0.3,0.7)) for i in range(len(sentences))],key=lambda x:x[1],reverse=True)
             selections = sorted( [ scores[n] for n in range(NUM_SENTENCES) ],key=lambda x:x[0])  # get the sentence indicies in chronological order
+
+
 
             return tuple([ sentences[tupl[0]]for tupl in selections])
 
