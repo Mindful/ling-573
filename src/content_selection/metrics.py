@@ -7,13 +7,16 @@ class Metrics:
         self.documents = document_group
         self.unigrams, self.bigrams = self.get_grams()
 
-
     def accept_token(self,token):
         tok_str = str(token).lower()
         if token.is_punct or tok_str in STOP_WORDS or tok_str == '`':
             return False
         return True
 
+    def clean_headline(self,headline):
+        cleaned = None
+
+        return cleaned
 
     def get_entities(self,document):
         return None
@@ -23,7 +26,7 @@ class Metrics:
 
     def doc2sents(self,document):
         sentences = [self.sent2words(sentence)  for paragraph in document.paragraphs for sentence in paragraph.sents]
-
+        sentences.append([str(document.headline).lower().split()])
         return sentences, self.get_entities(document)
 
     def get_grams(self):
@@ -52,18 +55,34 @@ class Metrics:
         return unigrams, bigrams
 
     def unigram_score(self,sentence, headline):
-        probas = np.array([self.unigrams[word] if not word in str(headline).lower() else self.unigrams[word]*1 for word in sentence])
+        probas = np.array([self.unigrams[word]  for word in sentence])
         return np.sum(probas)
 
     def bigram_score(self,sentence, headline):
         bigrams = [sentence[i-1] + ' ' + sentence[i] for i in range(1,len(sentence))]
-        probas = np.array([ self.bigrams[bigram] if not bigram in str(headline).lower() else self.bigrams[bigram]*1 for bigram in bigrams])
+        probas = np.array([ self.bigrams[bigram]  for bigram in bigrams])
         return np.sum(probas)
 
-    def headline_score(self,sentence,headline):
-        overlap = 0.0
-        total_uni = None
-        return None
+    def get_headline_score(self,sentence,headline,lambda1,lambda2):
+        if headline.ents:
+            points = []
+            for ent in headline.ents:
+                uni_sum = lambda1*np.sum(np.array([self.unigrams[word] for word in sentence if word in str(ent).lower()]))
 
-    def score(self,sentence, headline, lambda1,lambda2):
-        return lambda1*self.unigram_score(self.sent2words(sentence),headline) + lambda2*self.bigram_score(self.sent2words(sentence),headline)
+                bigrams = [sentence[i - 1] + ' ' + sentence[i] for i in range(1, len(sentence))]
+                bi_sum = lambda1*np.sum(np.array([ self.bigrams[bigram] for bigram in bigrams if bigram in str(ent).lower()]))
+
+                points.append(uni_sum)
+                points.append(bi_sum)
+            return np.sum(np.array(points))
+        else:
+            return 0.0
+
+    def score(self,sentence, headline, lambda1,lambda2,lambda3):
+        sent = self.sent2words(sentence)
+        if headline:
+            headline_score = self.get_headline_score(sent, headline,lambda1,lambda2)
+        else:
+            headline_score = 0.0
+
+        return lambda1*self.unigram_score(sent,headline) + lambda2*self.bigram_score(sent,headline) + lambda3*headline_score

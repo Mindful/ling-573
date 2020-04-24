@@ -12,7 +12,7 @@ class Content:
 
 class Selection:
 
-    def __init__(self,document_group_object,use_lda=False,use_ngram=False):
+    def __init__(self,document_group_object,use_lda=False,use_ngram=True):
         self.doc_group = document_group_object
         self.USE_LDA = use_lda
         self.USE_NGRAM = use_ngram
@@ -59,7 +59,7 @@ class Selection:
             sentences = self.get_sentences(document_group_article)
             NUM_SENTENCES = min(2,len(sentences))
 
-            scores = sorted([(i,self.METRICS.score(sentences[i],headline,0.3,0.7)) for i in range(len(sentences))],key=lambda x:x[1],reverse=True)
+            scores = sorted([(i,self.METRICS.score(sentences[i],headline,0.3,0.7,0.05)) for i in range(len(sentences))],key=lambda x:x[1],reverse=True)
             selections = sorted( [ scores[n] for n in range(NUM_SENTENCES) ],key=lambda x:x[0])  # get the sentence indicies in chronological order
 
 
