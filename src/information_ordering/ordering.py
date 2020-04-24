@@ -43,12 +43,39 @@ def remove_redundant_sents(content_objs):
 
 def is_redundant(sent_1, sent_2):
     if sent_1.has_vector and sent_2.has_vector:
-
-    # stripping down to lemmas and removing stop words did NOT seem to help i.e. nlp(" ".join([tok.lemma_ for tok in sent_1 if tok.text not in spacy_stopwords and not tok.is_punct]))
-    # might consider adding comparison of doc.ents or doc.noun_chunk overlap
-    # current value (0.87) is chosen by manual inspection of ~20 sentence pairs
-        return sent_1.similarity(sent_2) > 0.87
+        # current value (0.87) is chosen by manual inspection of ~20 sentence pairs
+        # stripping down to lemmas and removing stop words did NOT seem to help i.e. nlp(" ".join([tok.lemma_ for tok in sent_1 if tok.text not in spacy_stopwords and not tok.is_punct]))
+        # might consider adding comparison of doc.ents or doc.noun_chunk overlap
+        return sent_1.similarity(sent_2) > .87
+        #return get_max_embedded_similarity(sent_1, sent_2) > .87
     return False
+
+def get_max_embedded_similarity(sent_1, sent_2):
+    '''
+    ** Given two spacy spans, get similarity of sentence 2 to all subspans of sentence 1 **
+    :param sent_1: spaCy span
+    :param sent_2: spaCy span
+    :return: max similarity score
+    '''
+    l1 = len(sent_1)
+    l2 = len(sent_2)
+    if l1 < l2:
+        short_sent = sent_1
+        long_sent = sent_2
+    else:
+        short_sent = sent_2
+        long_sent = sent_1
+    short_sent_len = min(l1,l2)
+    long_sent_len = max(l1,l2)
+    max_similarity = 0
+    for i in range(0,long_sent_len-short_sent_len):
+        comparison_span = long_sent[i:i+short_sent_len]
+        if not (short_sent.has_vector and comparison_span.has_vector):
+            continue
+        sim = short_sent.similarity(comparison_span)
+        if sim > max_similarity:
+            max_similarity = sim
+    return max_similarity
 
 
 def parse_date_from_article_id(article_id):
