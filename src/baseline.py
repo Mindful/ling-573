@@ -10,6 +10,8 @@ def main():
     #topics = get_dataset_topics(TRAIN)
     topics = get_dataset_topics(DEV_TEST)
 
+    Selection.selection_method = Selection.select_ngram
+
     bar = Bar('Processing topics...', max=len(topics))
     for topic in topics:
         doc_group = DocumentGroup(topic)
