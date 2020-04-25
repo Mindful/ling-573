@@ -5,7 +5,7 @@ STOP_WORDS = spacy.lang.en.stop_words.STOP_WORDS
 class Metrics:
     def __init__(self,document_group):
         self.documents = document_group
-        self.unigrams, self.bigrams = self.get_grams()
+        self.unigrams, self.bigrams, self.trigrams = self.get_grams()
 
     def accept_token(self,token):
         tok_str = str(token).lower()
@@ -32,27 +32,34 @@ class Metrics:
     def get_grams(self):
         unigrams = {}
         bigrams = {}
+        trigrams = {}
         num_unigrams = 0
         num_bigrams = 0
+        num_trigrams = 0
         for document in self.documents.articles:
             sentences, ent = self.doc2sents(document)
             for s in sentences:
                 num_unigrams += len(s)
                 num_bigrams += (len(s)-1)
+                num_trigrams += (len(s) - 2)
                 for i in range(len(s)):
                     unigram = str(s[i])
                     if i > 0:
                         bigram = s[i-1] + ' ' + unigram
                         bigrams.setdefault(bigram,0)
                         bigrams[bigram]+=1
-
+                        if i > 1:
+                            trigram = s[i-2] + ' ' + bigram
+                            trigrams.setdefault(trigram,0)
+                            trigrams[trigram]+=1
                     unigrams.setdefault(unigram, 0)
                     unigrams[unigram] += 1
 
         # transform to probabilites & return
         unigrams = {unigram:(unigrams[unigram]/num_unigrams) for unigram in unigrams}
         bigrams = {bigram: (bigrams[bigram] / num_bigrams) for bigram in bigrams}
-        return unigrams, bigrams
+        trigrams = {trigram: (trigrams[trigram]/num_trigrams) for trigram in trigrams}
+        return unigrams, bigrams, trigrams
 
     def unigram_score(self,sentence, headline):
         probas = np.array([self.unigrams[word]  for word in sentence])
@@ -63,14 +70,19 @@ class Metrics:
         probas = np.array([ self.bigrams[bigram]  for bigram in bigrams])
         return np.sum(probas)
 
+    def trigram_score(self,sentence):
+        trigrams = [sentence[i-2] + ' ' + sentence[i-1] + ' ' + sentence[i] for i in range(2,len(sentence))]
+        probas = np.array([ self.trigrams[trigram]  for trigram in trigrams])
+        return np.sum(probas)
+
     def get_headline_score(self,sentence,headline,lambda1,lambda2):
         if headline.ents:
             points = []
             for ent in headline.ents:
-                uni_sum = lambda1*np.sum(np.array([self.unigrams[word] for word in sentence if word in str(ent).lower()]))
+                uni_sum = lambda1*np.sum(np.array([self.unigrams[word] for word in sentence if word in  str(ent).lower() ]))
 
                 bigrams = [sentence[i - 1] + ' ' + sentence[i] for i in range(1, len(sentence))]
-                bi_sum = lambda1*np.sum(np.array([ self.bigrams[bigram] for bigram in bigrams if bigram in str(ent).lower()]))
+                bi_sum = lambda2*np.sum(np.array([ self.bigrams[bigram] for bigram in bigrams if  bigram in str(ent).lower() ]))
 
                 points.append(uni_sum)
                 points.append(bi_sum)
@@ -78,11 +90,11 @@ class Metrics:
         else:
             return 0.0
 
-    def score(self,sentence, headline, lambda1,lambda2,lambda3):
+    def score(self,sentence, headline, lambda1,lambda2,lambda3,lambda4):
         sent = self.sent2words(sentence)
         if headline:
             headline_score = self.get_headline_score(sent, headline,lambda1,lambda2)
         else:
             headline_score = 0.0
 
-        return lambda1*self.unigram_score(sent,headline) + lambda2*self.bigram_score(sent,headline) + lambda3*headline_score
+        return lambda1*self.unigram_score(sent,headline) + lambda2*self.bigram_score(sent,headline) +lambda3*self.trigram_score(sent)+ lambda4*headline_score
