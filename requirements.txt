@@ -4,3 +4,4 @@ spacy>=2.2.0,<3.0.0
 https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-2.2.5/en_core_web_lg-2.2.5.tar.gz#egg=en_core_web_lg
 python-dateutil>=2.8.1
 scikit-learn>=0.22.2
+lexrank>=0.1.0
