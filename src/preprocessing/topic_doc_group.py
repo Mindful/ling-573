@@ -5,8 +5,6 @@ from . import clean_text
 
 
 def english_nlp():
-    # just doing the en_core_web_lg with everything enabled for now,
-    # we may want to customize and/or exclude parts of the pipeline later
     print('Loading spaCy, this may take a moment.') #TODO: replace this with logging once logging is set up
     nlp = spacy.load("en_core_web_lg")
     return nlp

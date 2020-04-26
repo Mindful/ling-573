@@ -2,7 +2,6 @@ import dateutil
 import itertools
 import spacy
 
-# TODO: figure out way to avoid loading English model in multiple places?
 nlp = spacy.load("en_core_web_lg")
 spacy_stopwords = nlp.Defaults.stop_words
 
@@ -14,8 +13,8 @@ class Ordering:
 
     def order(self, selection_object):
         '''
-        TO DO: implement ordering
-        For now, chronological
+        Given selected content, order sentences according to chronological order (publication date, then order in document)
+        Also removes redundant sentences
         '''
         chronological = self._order_docs_chronologically(selection_object.selected_content)
         content_objs = [article[2] for article in chronological]
