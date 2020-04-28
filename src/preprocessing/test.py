@@ -1,9 +1,14 @@
+from data import Topic
+from . import is_countworthy_token
+from .topic_doc_group import DocumentGroup, DocGroupArticle, clean_text
+import spacy
 import unittest
 import datetime
 from collections import namedtuple
 from spacy.tokens import Doc, Span
-from preprocessing.topic_doc_group import DocumentGroup, DocGroupArticle, clean_text
-from data import Topic
+
+
+nlp = spacy.load("en_core_web_lg")
 
 Metadata = namedtuple('Metadata', ['id', 'title', 'narrative'])
 Article = namedtuple('Article', ['id', 'date', 'type', 'headline', 'paragraphs'])
@@ -407,6 +412,223 @@ class TestPreprocessing(unittest.TestCase):
         text = "``Having exercised that right, they cannot then say, `We're police officers, therefore what we did was OK,''' he said."
         cleaned = clean_text(text)
         self.assertEqual(cleaned, "\"Having exercised that right, they cannot then say, 'We're police officers, therefore what we did was OK,'\" he said.")
+
+
+    def test_is_token_count_worthy(self):
+        token = nlp("--pixar")[0]
+        self.assertEqual(token.text, "--pixar")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_2(self):
+        token = nlp("a0014")[0]
+        self.assertEqual(token.text, "a0014")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_3(self):
+        token = nlp("13:45")[0]
+        self.assertEqual(token.text, "13:45")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_4(self):
+        token = nlp("art!---------------------")[0]
+        self.assertEqual(token.text, "art!---------------------")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_5(self):
+        token = nlp("                                              ")[0]
+        self.assertEqual(token.text, "                                              ")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_6(self):
+        token = nlp("2,308.70")[0]
+        self.assertEqual(token.text, "2,308.70")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_7(self):
+        token = nlp("2,308.70")[0]
+        self.assertEqual(token.text, "2,308.70")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_8(self):
+        token = nlp("2,308.70")[0]
+        self.assertEqual(token.text, "2,308.70")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_9(self):
+        token = nlp("17,656")[0]
+        self.assertEqual(token.text, "17,656")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_10(self):
+        token = nlp("-addressing")[0]
+        self.assertEqual(token.text, "-addressing")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_11(self):
+        token = nlp(".atlantawatergardens")[0]
+        self.assertEqual(token.text, ".atlantawatergardens")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_12(self):
+        token = nlp("/dare")[0]
+        self.assertEqual(token.text, "/dare")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_13(self):
+        token = nlp("000bo")[0]
+        self.assertEqual(token.text, "000bo")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_14(self):
+        token = nlp("0185(58")[0]
+        self.assertEqual(token.text, "0185(58")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_15(self):
+        token = nlp("0190laurens")[0]
+        self.assertEqual(token.text, "0190laurens")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_16(self):
+        token = nlp("0190laurens")[0]
+        self.assertEqual(token.text, "0190laurens")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_17(self):
+        token = nlp("07-cox")[0]
+        self.assertEqual(token.text, "07-cox")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_18(self):
+        token = nlp("07.6'e")[0]
+        self.assertEqual(token.text, "07.6'e")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_19(self):
+        token = nlp("1%9]q")[0]
+        self.assertEqual(token.text, "1%9]q")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_20(self):
+        token = nlp("1%9]q")[0]
+        self.assertEqual(token.text, "1%9]q")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_21(self):
+        token = nlp("bjt-22-cox")[0]
+        self.assertEqual(token.text, "bjt-22-cox")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_22(self):
+        token = nlp("boggs:(end")[0]
+        self.assertEqual(token.text, "boggs:(end")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_23(self):
+        token = nlp("box/")[0]
+        self.assertEqual(token.text, "box/")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_24(self):
+        token = nlp("c.l.g")[0]
+        self.assertEqual(token.text, "c.l.g")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_25(self):
+        token = nlp("charge-(update1")[0]
+        self.assertEqual(token.text, "charge-(update1")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_26(self):
+        token = nlp("~~~ike")[0]
+        self.assertEqual(token.text, "~~~ike")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_27(self):
+        token = nlp("|chris")[0]
+        self.assertEqual(token.text, "|chris")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_28(self):
+        token = nlp("zzzzznnappp")[0]
+        self.assertEqual(token.text, "zzzzznnappp")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_29(self):
+        token = nlp("fxxfffxf")[0]
+        self.assertEqual(token.text, "fxxfffxf")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_30(self):
+        token = nlp("x-43a")[0]
+        self.assertEqual(token.text, "x-43a")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, False)
+
+
+    def test_is_token_count_worthy_31(self):
+        token = nlp("zurbirggen")[0]
+        self.assertEqual(token.text, "zurbirggen")
+        count_worthy = is_countworthy_token(token)
+        self.assertEqual(count_worthy, True)
 
 
 if __name__ == '__main__':
