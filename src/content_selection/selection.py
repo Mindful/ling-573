@@ -2,6 +2,7 @@ from preprocessing.topic_doc_group import DocumentGroup
 from content_selection.lda import LDA
 from content_selection.metrics import Metrics
 import spacy,re
+from content_selection.lexrank import LexRank
 
 
 
@@ -66,6 +67,12 @@ class Selection:
         return (list(document_group_article.paragraphs[0].sents)[0],
                 list(document_group_article.paragraphs[num_paragraphs - 1].sents)[0]
                 )
+
+    def select_lexrank(self, document_group_article):
+        #TODO: WIP
+        lxr = LexRank(self.doc_group)
+        lxr.rank()
+        return self.select_simple(document_group_article) #TODO: replace with lexrank ranking
 
     def select(self,document_group_article):
         """
