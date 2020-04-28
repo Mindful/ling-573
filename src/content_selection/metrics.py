@@ -63,17 +63,17 @@ class Metrics:
 
     def unigram_score(self,sentence, headline):
         probas = np.array([self.unigrams[word]  for word in sentence])
-        return np.sum(probas)
+        return np.sum(probas)/len(sentence)
 
     def bigram_score(self,sentence, headline):
         bigrams = [sentence[i-1] + ' ' + sentence[i] for i in range(1,len(sentence))]
         probas = np.array([ self.bigrams[bigram]  for bigram in bigrams])
-        return np.sum(probas)
+        return np.sum(probas)/len(sentence)
 
     def trigram_score(self,sentence):
         trigrams = [sentence[i-2] + ' ' + sentence[i-1] + ' ' + sentence[i] for i in range(2,len(sentence))]
         probas = np.array([ self.trigrams[trigram]  for trigram in trigrams])
-        return np.sum(probas)
+        return np.sum(probas)/len(sentence)
 
     def get_headline_score(self,sentence,headline,lambda1,lambda2):
         if headline.ents:
