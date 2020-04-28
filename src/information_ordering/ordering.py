@@ -45,7 +45,7 @@ def is_redundant(sent_1, sent_2):
         # current value (0.87) is chosen by manual inspection of ~20 sentence pairs
         # stripping down to lemmas and removing stop words did NOT seem to help i.e. nlp(" ".join([tok.lemma_ for tok in sent_1 if tok.text not in spacy_stopwords and not tok.is_punct]))
         # might consider adding comparison of doc.ents or doc.noun_chunk overlap
-        return sent_1.similarity(sent_2) > .88
+        return sent_1.similarity(sent_2) > .87
         #return get_max_embedded_similarity(sent_1, sent_2) > .87
     return False
 
