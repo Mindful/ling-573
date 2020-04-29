@@ -118,22 +118,25 @@ def load_sample_articles(corpus, count=20):
     return output
 
 
+def get_dataset_pickle_location(dataset):
+    dataset_location = DataManager.datasets[dataset]
+    pickle_name = os.path.basename(dataset_location) + '.pickle'
+    local_location = os.path.join(DATA_DIR, pickle_name)
+    return local_location
 
 
 def get_dataset_topics(dataset):
     if dataset not in DataManager.datasets:
         raise RuntimeError("Unknown dataset, please use one of the dataset constants.")
 
-    dataset_location = DataManager.datasets[dataset]
-    pickle_name = os.path.basename(dataset_location) + '.pickle'
-    local_location = os.path.join(DATA_DIR, pickle_name)
+    local_location = get_dataset_pickle_location(dataset)
 
     try:
         with open(local_location, 'rb') as picklefile:
             return pickle.load(picklefile)
     except FileNotFoundError:
         try:
-            topic_metadatas = read_topics_file(dataset_location)
+            topic_metadatas = read_topics_file(DataManager.datasets[dataset])
             queries = _compute_queries_by_file(topic_metadatas)
             topics = _fetch_articles_into_topics(queries, topic_metadatas)
             with open(local_location, 'wb') as picklefile:

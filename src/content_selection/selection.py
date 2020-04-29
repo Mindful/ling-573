@@ -3,6 +3,8 @@ from content_selection.lda import LDA
 from content_selection.metrics import Metrics
 import spacy,re
 from content_selection.lexrank import LexRank
+import metric_computation
+import content_selection.lexrank_test
 
 
 
@@ -71,7 +73,11 @@ class Selection:
     def select_lexrank(self, document_group_article):
         #TODO: WIP
         lxr = LexRank(self.doc_group)
-        lxr.rank()
+        lxr.threshold = 0.3
+        lexrank_results = lxr.rank()
+
+        prepackaged_results = content_selection.lexrank_test.rank_docgroup_sentences(self.doc_group)
+
         return self.select_simple(document_group_article) #TODO: replace with lexrank ranking
 
     def select(self,document_group_article):

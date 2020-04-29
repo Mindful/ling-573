@@ -11,6 +11,7 @@ def main():
     topics = get_dataset_topics(DEV_TEST)
 
     Selection.selection_method = Selection.select_ngram
+    #Selection.selection_method = Selection.select_lexrank
 
     bar = Bar('Processing topics...', max=len(topics))
     for topic in topics:

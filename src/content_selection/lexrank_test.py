@@ -23,11 +23,11 @@ def rank_docgroup_sentences(docgroup):
         sent for doc in doc_sentence_text_list for sent in doc
     ]
 
-    # all_scores = lxr.rank_sentences(
-    #     all_sents,
-    #     threshold=None,
-    #     fast_power_method=False,
-    # )
+    all_scores = lxr.rank_sentences(
+        all_sents,
+        threshold=0.3,
+        fast_power_method=False,
+    )
 
     candidate_sentences = lxr.get_summary(
         all_sents,
@@ -39,4 +39,5 @@ def rank_docgroup_sentences(docgroup):
     for sent in candidate_sentences:
         candidate_tuples.append((doc_sentence_text_to_span[sent],doc_sentence_text_to_article[sent]))
 
-    return {'sentences':candidate_sentences,'tuples':candidate_tuples}
+    #return {'sentences':candidate_sentences,'tuples':candidate_tuples}
+    return candidate_sentences

@@ -13,26 +13,42 @@ class LexRank:
     def disable_continous_ranking(self):
         self.threshold = None
 
-    def __init__(self, docgroup, threshold=0.2, damping=0.15):
+    def __init__(self, docgroup, threshold=0.2, damping=0.15, include_headlines=True, bias_for_headlines=True):
         self.docgroup = docgroup
         self.threshold = threshold
         self.damping = damping
+        self.include_headlines = include_headlines
+        self.bias_for_headlines = bias_for_headlines
 
     def rank(self):
         local_vocab = self._local_vocab()
         vocab = {
             word: index for index, word in enumerate(local_vocab)
-        }  # TODO: this might be better as IDF vocab instead of local vocab, unsure
+        }  # use local vocab instead of global vocab for smaller vectors; doesn't affect calculations
 
         sentence_counter = 0
         sentences_indices_by_article = {}
+        title_indices_by_article = {}
         all_sentences = []
         for article in self.docgroup.articles:
             index_list = []
-            for sentence in (sent for paragraph in article.paragraphs for sent in paragraph.sents):
-                index_list.append(sentence_counter)
-                all_sentences.append(sentence)
-                sentence_counter += 1
+            sentences = [sent for paragraph in article.paragraphs for sent in paragraph.sents]
+            if self.include_headlines and article.headline is not None:
+                title = True
+                sentences.append(article.headline)
+            else:
+                title = False
+
+            for index, sentence in enumerate(sentences):
+                if self._is_sentence_useful(sentence, vocab):
+                    index_list.append(sentence_counter)
+                    all_sentences.append(sentence)
+                    sentence_counter += 1
+
+                    if index == len(sentences) - 1 and title:
+                        title_indices_by_article[article.id] = sentence_counter
+                else:
+                    print("warning: useless sentence", sentence) #TODO: replace with logging
 
             sentences_indices_by_article[article.id] = index_list
 
@@ -43,7 +59,11 @@ class LexRank:
 
         lexrank_matrix = self._power_method(transition_matrix)
 
-        print('wiggity woo')
+        return sorted(zip(all_sentences, lexrank_matrix), key=lambda x: x[1], reverse=True)
+
+    def _is_sentence_useful(self, sentence, vocab):
+        return sum(1 for token in sentence if token.lower_ in vocab)
+
 
 
     def _dampen_transition_matrix(self, transition_matrix):
@@ -80,10 +100,17 @@ class LexRank:
 
             if np.allclose(eigenvector, next_eigenvector):
                 return next_eigenvector
+            else:
+                eigenvector = next_eigenvector
 
     def _local_vocab(self):
         local_vocab = set()
         for article in self.docgroup.articles:
+            if self.include_headlines and article.headline is not None:
+                for token in article.headline:
+                    if is_countworthy_token(token):
+                        local_vocab.add(token.lower_)
+
             for paragraph in article.paragraphs:
                 for token in paragraph:
                     if is_countworthy_token(token):

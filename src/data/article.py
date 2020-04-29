@@ -40,14 +40,16 @@ class Article:
         return ' '.join(self.paragraphs)
 
     def __repr__(self):
-        return self.__dict__.__repr__()
+        return '<{} {}: "{}">'.format(self.__class__.__name__, self.id, self.headline)
 
     @staticmethod
     def from_old_xml(xml_object):
         id = get_child_text(xml_object, 'DOCNO')
         type = get_child_text(xml_object, 'DOCTYPE')
-        headline = get_child_text(xml_object, 'HEADER')
-        text_obj = get_child(get_child(xml_object, 'BODY'), 'TEXT')
+
+        body_obj = get_child(xml_object, 'BODY')
+        headline = get_child_text(body_obj, 'HEADLINE')
+        text_obj = get_child(body_obj, 'TEXT')
         paragraphs = [x.text.strip() for x in text_obj if x.text is not None]
 
         raw_text = text_obj.text.strip()

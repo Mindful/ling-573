@@ -91,6 +91,7 @@ def get_idf(corpus):
             return idf_scores
 
     except FileNotFoundError:
+        print("Recomputing IDF data, please wait a moment") #TODO: should be logging
         sparse_vector, _articles, vocabulary = get_words_by_doc(corpus)
         default_value, idf_scores = calculate_idf_score(sparse_vector, vocabulary, True)
         idf_data = {
