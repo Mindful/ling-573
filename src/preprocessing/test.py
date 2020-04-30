@@ -33,6 +33,14 @@ class TestPreprocessing(unittest.TestCase):
         self.assertEqual(len(document_group.articles), 3)
         self.assertEqual(type(document_group.articles[0]), DocGroupArticle)
 
+        not_quote_line = list(document_group.articles[0].paragraphs[0].sents)[0]
+        self.assertEqual(not_quote_line.text, "The sheriff's initial estimate of as many as 25 dead in the Columbine High massacre was off the mark apparently because the six SWAT teams that swept the building counted some victims more than once.")
+        self.assertEqual(not_quote_line._.contains_quote, False)
+
+        quote_line = list(document_group.articles[1].paragraphs[1].sents)[0]
+        self.assertEqual(quote_line.text, "\"The question is who has the weapons, the good people or those who are ugly and warped,\" he said.")
+        self.assertEqual(quote_line._.contains_quote, True)
+
 
     def test_create_doc_group_article(self):
         document_group = DocumentGroup(self.topic)
@@ -58,7 +66,6 @@ class TestPreprocessing(unittest.TestCase):
                           type=None, 
                           headline=None, 
                           paragraphs=paragraphs_with_empty)
-    
         doc_group_article = DocGroupArticle(article)
 
         self.assertEqual(len(doc_group_article.paragraphs), 3)
@@ -127,7 +134,6 @@ class TestPreprocessing(unittest.TestCase):
         parsed_sentences = list(doc_group_article.paragraphs[0].sents)
 
         self.assertEqual(len(parsed_sentences), 3)
-
 
 
     def test_doc_group_article_spacy_stuff(self):

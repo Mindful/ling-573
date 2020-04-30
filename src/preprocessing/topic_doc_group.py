@@ -1,6 +1,6 @@
 import re
 import spacy
-from spacy.tokens import Doc
+from spacy.tokens import Doc, Span
 from . import clean_text
 
 def set_custom_boundaries(doc):
@@ -21,8 +21,11 @@ def set_custom_boundaries(doc):
 
 def english_nlp():
     print('Loading spaCy, this may take a moment.') #TODO: replace this with logging once logging is set up
-    nlp = spacy.load("en_core_web_lg")
-    nlp.add_pipe(set_custom_boundaries, before="parser")
+    quote_getter = lambda span: "\"" in span.text
+    Span.set_extension('contains_quote', getter=quote_getter)
+
+    nlp = spacy.load('en_core_web_lg')
+    nlp.add_pipe(set_custom_boundaries, before='parser')
     return nlp
 
 
