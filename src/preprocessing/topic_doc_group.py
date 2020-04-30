@@ -3,10 +3,26 @@ import spacy
 from spacy.tokens import Doc
 from . import clean_text
 
+def set_custom_boundaries(doc):
+    '''
+    Prevent sentence segmentation from splitting a quotation
+    '''
+    in_progress_quote = False
+    for token in doc:
+        if ("\"" in token.text) and (not in_progress_quote):
+            in_progress_quote = True
+        elif ("\"" in token.text) and in_progress_quote:
+            in_progress_quote = False
+            token.is_sent_start = False
+        elif in_progress_quote:
+            token.is_sent_start = False
+    return doc
+
 
 def english_nlp():
     print('Loading spaCy, this may take a moment.') #TODO: replace this with logging once logging is set up
     nlp = spacy.load("en_core_web_lg")
+    nlp.add_pipe(set_custom_boundaries, before="parser")
     return nlp
 
 
