@@ -64,6 +64,72 @@ class TestPreprocessing(unittest.TestCase):
         self.assertEqual(len(doc_group_article.paragraphs), 3)
 
 
+    def test_create_doc_group_article_2(self):
+        paragraph = ['"You can\'t even go to the bathroom without permission, and then they time you," said Holly Bernside, also 15. "All the teachers are wearing nametags, and there is one at every door."']
+        article = Article(id='APW19990421.0284',
+                        date=datetime.date(1999, 4, 21),
+                        type=None,
+                        headline=None,
+                        paragraphs=paragraph)
+        doc_group_article = DocGroupArticle(article)
+        parsed_sentences = list(doc_group_article.paragraphs[0].sents)
+
+        self.assertEqual(len(parsed_sentences), 2)
+
+
+    def test_create_doc_group_article_3(self):
+        paragraph = ["The school's marquee proclaimed ``Rebels our thoughts are with you.'' Two days earlier, a massacre by two students at Columbine High, whose teams are called the Rebels, left 15 people dead and dozens wounded. Columbine is about three miles away. "]
+        article = Article(id='APW19990421.0284',
+                        date=datetime.date(1999, 4, 21),
+                        type=None,
+                        headline=None,
+                        paragraphs=paragraph)
+        doc_group_article = DocGroupArticle(article)
+        parsed_sentences = list(doc_group_article.paragraphs[0].sents)
+
+        self.assertEqual(len(parsed_sentences), 3)
+
+
+    def test_create_doc_group_article_4(self):
+        paragraph = ["\"It is impossible for giant pandas fed in captivity to survive\nthrough natural selection, which will result in similar heredities, \"\nsaid a zookeeper. \"The inbreeding among giant pandas in the same\nareas easily leads to the species\' degeneration.\""]
+        article = Article(id='APW19990421.0284',
+                        date=datetime.date(1999, 4, 21),
+                        type=None,
+                        headline=None,
+                        paragraphs=paragraph)
+        doc_group_article = DocGroupArticle(article)
+        parsed_sentences = list(doc_group_article.paragraphs[0].sents)
+
+        self.assertEqual(len(parsed_sentences), 2)
+
+
+    def test_create_doc_group_article_5(self):
+        paragraph = ["\"John Kerry strongly supports stem cell research. George Bush is\nputting limits on it,\" Fox says in an ad Kerry\'s campaign unveiled\nThursday. \"Stem cell research can help millions of Americans whose\nlives have been touched by devastating illnesses. George Bush says we\ncan wait. I say lives are at stake and it\'s time for leadership.\nThat\'s why I support John Kerry for president.\""]
+        article = Article(id='APW19990421.0284',
+                        date=datetime.date(1999, 4, 21),
+                        type=None,
+                        headline=None,
+                        paragraphs=paragraph)
+        doc_group_article = DocGroupArticle(article)
+        parsed_sentences = list(doc_group_article.paragraphs[0].sents)
+
+        self.assertEqual(len(parsed_sentences), 2)
+
+
+    def test_create_doc_group_article_6(self):
+        paragraph = ["Ausaid estimated 6,000 people were left homeless, McLachlan said. \"We have assumed that the schools in Arop, the schools in Sissano and the schools in Warapu will be closed because we don't have the children,\" Dalle said. \"They're dead. they're all dead.\""]
+        article = Article(id='APW19990421.0284',
+                        date=datetime.date(1999, 4, 21),
+                        type=None,
+                        headline=None,
+                        paragraphs=paragraph)
+        doc_group_article = DocGroupArticle(article)
+        parsed_sentences = list(doc_group_article.paragraphs[0].sents)
+
+        self.assertEqual(len(parsed_sentences), 3)
+
+
+
     def test_doc_group_article_spacy_stuff(self):
         document_group = DocumentGroup(self.topic)
         article_1 = document_group.articles[0]

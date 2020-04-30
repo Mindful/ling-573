@@ -49,6 +49,7 @@ def clean_text(text, remove_quotes=False):
     text = re.sub(r'^https?://\S*$', '', text) # remove urls
     text = re.sub(r'^www.{4,100}$', '', text) # remove urls II
     text = re.sub(r'^\s*[A-Z|\-|\s]{2,50} \(Undated\)\s*', '', text) # remove e.g. BKN-PREVIEW-WEST (Undated)
+    text = re.sub(r"\s+\.\s+\.\s+\.", ".", text) # remove . . . 
 
 
     # total junk, no idea
@@ -58,6 +59,9 @@ def clean_text(text, remove_quotes=False):
     text = re.sub(r'^\s*nn\s*$', '', text)  # remove nn lines
     text = re.sub(r'^\s*(\s*-\s*)+\s*$', '', text)  # remove  - - - - lines
     text = re.sub(r'^\.+$', '', text)  # remove empty ... lines, e.g. "." or "..."
+    text = re.sub(r'.*-.*-.*\s+', '', text)  # remove Bc-fla-lafave-deal 
+    text = re.sub(r'\( \) --', '', text)  # remove ( ) --
+
 
 
     # news things
@@ -74,6 +78,7 @@ def clean_text(text, remove_quotes=False):
     text = re.sub("'''", "'\"", text) # deal with closing nested quotes
     text = re.sub("``", '"', text)  # ``It's like a... 
     text = re.sub("''", '"', text)  #  ...like a prison in there,'' said Jessica Miller, 15.
+    text = re.sub(r',\s([\"|\'])\s', r",\1 ", text)
 
     if remove_quotes:
         text = re.sub("\"", '', text)
@@ -81,9 +86,12 @@ def clean_text(text, remove_quotes=False):
         text = re.sub(r"([A-Z|a-z])'\s", r"\1 ", text)
 
 
-    # * remove spurious line breaks 
+    # * remove spurious line breaks and tabs
     text = re.sub('\s+\\n', ' ', text)
+    text = re.sub(r'\t', ' ', text)
     text = re.sub('(\S+)\\n', r'\1 ', text)
+    text = re.sub('\s+', ' ', text)
+
 
     return text.strip()
 
