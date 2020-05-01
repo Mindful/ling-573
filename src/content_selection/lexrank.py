@@ -1,24 +1,131 @@
 from preprocessing import is_countworthy_token
 from metric_computation import Metrics
 from scipy.sparse import dok_matrix
-from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.metrics.pairwise import cosine_similarity, pairwise_kernels
 import numpy as np
+from scipy.spatial.distance import cosine as cosine_distance
+from collections import Counter
+
+#TODO - idf should work with lemmas, everything should be lemmafied
+
+
+def countworthy_tokens(doc):
+    return (token for token in doc if is_countworthy_token(token))
+
+
+def is_sentence_useful(sentence, vocab):
+    return sum(1 for token in sentence if token.lower_ in vocab)
+
+
+def word_vector_similarity_matrix(all_sentences):
+    similarity_matrix = np.empty((len(all_sentences), len(all_sentences)))
+    for i, sent_i in enumerate(all_sentences):
+        for j, sent_j in enumerate(all_sentences):
+            similarity_matrix[i,j] = sent_i.similarity(sent_j)
+
+    return similarity_matrix
+
+
+def idf_weighted_vector_average(sentence):
+    tokens = [token for token in countworthy_tokens(sentence) if token.has_vector]
+    idf_scores = np.array([Metrics.idf[token.lower_] for token in tokens])
+    weighted_vectors = [
+        token.vector * idf_scores[index] for index, token in enumerate(tokens)
+    ]
+
+    weighted_average = sum(weighted_vectors) / sum(idf_scores)
+    return weighted_average
+
+
+def idf_weighted_vector_similarity(s1, s2):
+    return 1 - cosine_distance(idf_weighted_vector_average(s1), idf_weighted_vector_average(s2))
+
+
+def tf_idf_vector_similarity_matrix(all_sentences):
+    #TODO: lemmatize
+    #TODO: how to deal with things that are outside of spacy vocabulary? maybe not here...
+
+    # normalize by idf sums, since that's what we're multiplying all the vectors by
+    similarity_matrix = np.empty((len(all_sentences), len(all_sentences)))
+    for i, sent_i in enumerate(all_sentences):
+        for j, sent_j in enumerate(all_sentences):
+            similarity_matrix[i, j] = idf_weighted_vector_similarity(sent_i, sent_j)
+
+    return similarity_matrix
+
+
+def tf_idf_similarity_matrix(sentences, vocab):
+    #TODO: lemmatize
+    vector = dok_matrix((len(sentences), len(vocab)), dtype=np.float32)
+    for index, sentence in enumerate(sentences):
+        for token in sentence:
+            text = token.lower_
+            if text in vocab:
+                vector[index, vocab[text]] += Metrics.idf[text]
+
+    sentences_vector = vector.tocsr()
+    similarity_matrix = cosine_similarity(sentences_vector)
+    return similarity_matrix
+
+def compute_bias_vector(all_sentences, bias_function):
+    # return a vector with an entry containing the (normalized) bias for each sentences
+    bias_array = np.array([bias_function(s) for s in all_sentences])
+    return bias_array / bias_array.sum()
+
+
+def compute_transition_matrix(threshold, damping, similarity_matrix):
+    if threshold is not None:
+        # discrete lexrank
+        adjacency_matrix = (similarity_matrix > threshold) * 1
+    else:
+        # continuous lexrank, degree of adjacency is similarity
+        adjacency_matrix = similarity_matrix
+
+    rowsums = adjacency_matrix.sum(axis=1, keepdims=True)
+    transition_matrix = adjacency_matrix / rowsums
+
+    return transition_matrix
+
+
+def dampen_transition_matrix(damping, transition_matrix):
+    n = transition_matrix.shape[0]
+    damping_base = damping / n
+    damping_multiplier = 1 - damping
+
+    return damping_base + (damping_multiplier * transition_matrix)
+
+def bias_and_dampen_transition_matrix(damping, bias_vector, transition_matrix):
+    damping_multiplier = 1 - damping
+    bias_base = bias_vector * damping
+
+    return (damping_multiplier * transition_matrix) + bias_base
+
+def power_method(matrix):
+    n = matrix.shape[0]
+    eigenvector = np.ones(n) / n
+    matrix = matrix.transpose()
+
+    while True:
+        next_eigenvector = np.dot(matrix, eigenvector)
+
+        if np.allclose(eigenvector, next_eigenvector):
+            return next_eigenvector
+        else:
+            eigenvector = next_eigenvector
+
+
+
 
 
 class LexRank:
 
-    def disable_damping(self):
-        self.damping = None
-
     def disable_continous_ranking(self):
         self.threshold = None
 
-    def __init__(self, docgroup, threshold=0.2, damping=0.15, include_headlines=True, bias_for_headlines=True):
+    def __init__(self, docgroup, threshold=0.2, damping=0.15):
         self.docgroup = docgroup
         self.threshold = threshold
         self.damping = damping
-        self.include_headlines = include_headlines
-        self.bias_for_headlines = bias_for_headlines
 
     def rank(self):
         local_vocab = self._local_vocab()
@@ -33,14 +140,14 @@ class LexRank:
         for article in self.docgroup.articles:
             index_list = []
             sentences = [sent for paragraph in article.paragraphs for sent in paragraph.sents]
-            if self.include_headlines and article.headline is not None:
+            if article.headline is not None:
                 title = True
                 sentences.append(article.headline)
             else:
                 title = False
 
             for index, sentence in enumerate(sentences):
-                if self._is_sentence_useful(sentence, vocab):
+                if is_sentence_useful(sentence, vocab):
                     index_list.append(sentence_counter)
                     all_sentences.append(sentence)
                     sentence_counter += 1
@@ -52,81 +159,31 @@ class LexRank:
 
             sentences_indices_by_article[article.id] = index_list
 
-        sentences_vector = self._vectorize_sentences(all_sentences, vocab)
-        similarity_matrix = cosine_similarity(sentences_vector)
+        similarity_matrix = tf_idf_similarity_matrix(all_sentences, vocab)
 
-        transition_matrix = self._compute_transition_matrix(similarity_matrix)
+        transition_matrix = compute_transition_matrix(self.threshold, self.damping, similarity_matrix)
+        #TODO: dampen or bias+dampen here
 
-        lexrank_matrix = self._power_method(transition_matrix)
+        lexrank_matrix = power_method(transition_matrix)
 
         return sorted(zip(all_sentences, lexrank_matrix), key=lambda x: x[1], reverse=True)
 
-    def _is_sentence_useful(self, sentence, vocab):
-        return sum(1 for token in sentence if token.lower_ in vocab)
 
-
-
-    def _dampen_transition_matrix(self, transition_matrix):
-        n = transition_matrix.shape[0]
-        damping_base = self.damping / n
-        damping_multiplier = 1 - self.damping
-
-        return damping_base + (damping_multiplier * transition_matrix)
-
-
-    def _compute_transition_matrix(self, similarity_matrix):
-        if self.threshold is not None:
-            # discrete lexrank
-            adjacency_matrix = (similarity_matrix > self.threshold) * 1
-        else:
-            # continuous lexrank, degree of adjacency is similarity
-            adjacency_matrix = similarity_matrix
-
-        rowsums = adjacency_matrix.sum(axis=1, keepdims=True)
-        transition_matrix = adjacency_matrix / rowsums
-        if self.damping is not None:
-            return self._dampen_transition_matrix(transition_matrix)
-        else:
-            return transition_matrix
-
-    def _power_method(self, matrix):
-        #TODO: this method isn't working properly
-        n = matrix.shape[0]
-        eigenvector = np.ones(n) / n
-        matrix = matrix.transpose()
-
-        while True:
-            next_eigenvector = np.dot(matrix, eigenvector)
-
-            if np.allclose(eigenvector, next_eigenvector):
-                return next_eigenvector
-            else:
-                eigenvector = next_eigenvector
 
     def _local_vocab(self):
         local_vocab = set()
         for article in self.docgroup.articles:
-            if self.include_headlines and article.headline is not None:
-                for token in article.headline:
-                    if is_countworthy_token(token):
-                        local_vocab.add(token.lower_)
+            if article.headline is not None:
+                for token in countworthy_tokens(article.headline):
+                    local_vocab.add(token.lower_)
 
             for paragraph in article.paragraphs:
-                for token in paragraph:
-                    if is_countworthy_token(token):
-                        local_vocab.add(token.lower_)
+                for token in countworthy_tokens(paragraph):
+                    local_vocab.add(token.lower_)
 
         return local_vocab
 
-    def _vectorize_sentences(self, sentences, vocab):
-        vector = dok_matrix((len(sentences), len(vocab)), dtype=np.float32)
-        for index, sentence in enumerate(sentences):
-            for token in sentence:
-                text = token.lower_
-                if text in vocab:
-                    vector[index, vocab[text]] += Metrics.idf[text]
 
-        return vector.tocsr()
 
 
 
