@@ -124,7 +124,7 @@ class LexRank:
         self.threshold = threshold
         self.damping = damping
 
-    def rank(self, max_results=10):
+    def rank(self):
         local_vocab = self._local_vocab(require_vector=True)
         vocab = {
             word: index for index, word in enumerate(local_vocab)
@@ -132,7 +132,7 @@ class LexRank:
 
         sentence_counter = 0
         sentences_indices_by_article = {}
-        title_indices_by_article = {}
+        title_indices_by_article = {} #TODO: is this useful? can we just delete this?
         all_sentences = []
         for article in self.docgroup.articles:
             index_list = []
@@ -166,20 +166,8 @@ class LexRank:
         lexrank_vector = power_method(transition_matrix)
         results = list(zip(all_sentences, lexrank_vector))
 
-        if max_results is None:
-            acceptable_indices = range(0, sentence_counter)  # any index is fine, we're including everything, no max
-        else:
-            acceptable_indices = np.argsort(-lexrank_vector)[0:max_results]
 
-        #TODO: bucketing and throwing away score atm, but after refactor include score and don't bucket
-        #just construct Content object
-        bucketed_results = {
-            article_id: [results[i][0] for i in indices if i in acceptable_indices]
-            for article_id, indices in sentences_indices_by_article.items()
-
-        }
-
-        return bucketed_results
+        return results, sentences_indices_by_article
 
 
     def _local_vocab(self, require_vector=False):

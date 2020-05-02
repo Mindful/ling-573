@@ -2,7 +2,7 @@ from preprocessing.topic_doc_group import DocumentGroup
 import numpy as np
 import spacy
 STOP_WORDS = spacy.lang.en.stop_words.STOP_WORDS
-class Metrics:
+class NgramMetrics:
     def __init__(self,document_group):
         self.documents = document_group
         self.unigrams, self.bigrams, self.trigrams = self.get_grams()
