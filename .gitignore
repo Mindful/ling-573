@@ -202,3 +202,5 @@ fabric.properties
 
 .idea/*
 summarize.log
+ROUGE-1.5.5.pl
+local_eval.sh

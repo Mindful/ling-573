@@ -71,14 +71,12 @@ class Selection:
                 )
 
     def select_lexrank(self, document_group_article):
-        #TODO: WIP
-        lxr = LexRank(self.doc_group)
-        lxr.threshold = 0.3
-        lexrank_results = lxr.rank()
+        if not hasattr(self, 'lexrank_results'):
+            self.lexrank_results = LexRank(self.doc_group, threshold=None).rank()
 
-        prepackaged_results = content_selection.lexrank_test.rank_docgroup_sentences(self.doc_group)
+        #prepackaged_results = content_selection.lexrank_test.rank_docgroup_sentences(self.doc_group)
 
-        return self.select_simple(document_group_article) #TODO: replace with lexrank ranking
+        return self.lexrank_results[document_group_article.id]
 
     def select(self,document_group_article):
         """

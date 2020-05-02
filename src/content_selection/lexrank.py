@@ -9,8 +9,8 @@ from collections import Counter
 #TODO - idf should work with lemmas, everything should be lemmafied
 
 
-def countworthy_tokens(doc):
-    return (token for token in doc if is_countworthy_token(token))
+def countworthy_tokens(doc): #TODO: update for lemmas
+    return (token for token in doc if is_countworthy_token(token) and token.lower_ in Metrics.idf)
 
 
 def is_sentence_useful(sentence, vocab):
@@ -37,19 +37,16 @@ def idf_weighted_vector_average(sentence):
     return weighted_average
 
 
-def idf_weighted_vector_similarity(s1, s2):
-    return 1 - cosine_distance(idf_weighted_vector_average(s1), idf_weighted_vector_average(s2))
-
-
 def tf_idf_vector_similarity_matrix(all_sentences):
     #TODO: lemmatize
     #TODO: how to deal with things that are outside of spacy vocabulary? maybe not here...
 
     # normalize by idf sums, since that's what we're multiplying all the vectors by
     similarity_matrix = np.empty((len(all_sentences), len(all_sentences)))
+    vectors_for_sentences = [idf_weighted_vector_average(s) for s in all_sentences]
     for i, sent_i in enumerate(all_sentences):
         for j, sent_j in enumerate(all_sentences):
-            similarity_matrix[i, j] = idf_weighted_vector_similarity(sent_i, sent_j)
+            similarity_matrix[i, j] = 1 - cosine_distance(vectors_for_sentences[i], vectors_for_sentences[j])
 
     return similarity_matrix
 
@@ -73,7 +70,7 @@ def compute_bias_vector(all_sentences, bias_function):
     return bias_array / bias_array.sum()
 
 
-def compute_transition_matrix(threshold, damping, similarity_matrix):
+def compute_transition_matrix(threshold, similarity_matrix):
     if threshold is not None:
         # discrete lexrank
         adjacency_matrix = (similarity_matrix > threshold) * 1
@@ -127,8 +124,8 @@ class LexRank:
         self.threshold = threshold
         self.damping = damping
 
-    def rank(self):
-        local_vocab = self._local_vocab()
+    def rank(self, max_results=10):
+        local_vocab = self._local_vocab(require_vector=True)
         vocab = {
             word: index for index, word in enumerate(local_vocab)
         }  # use local vocab instead of global vocab for smaller vectors; doesn't affect calculations
@@ -155,31 +152,48 @@ class LexRank:
                     if index == len(sentences) - 1 and title:
                         title_indices_by_article[article.id] = sentence_counter
                 else:
-                    print("warning: useless sentence", sentence) #TODO: replace with logging
+                    pass
+                    #print("warning: useless sentence", sentence) #TODO: replace with logging
 
             sentences_indices_by_article[article.id] = index_list
 
-        similarity_matrix = tf_idf_similarity_matrix(all_sentences, vocab)
+        #similarity_matrix = tf_idf_similarity_matrix(all_sentences, vocab)
+        similarity_matrix = tf_idf_vector_similarity_matrix(all_sentences)
 
-        transition_matrix = compute_transition_matrix(self.threshold, self.damping, similarity_matrix)
-        #TODO: dampen or bias+dampen here
+        transition_matrix = compute_transition_matrix(self.threshold, similarity_matrix)
+        transition_matrix = dampen_transition_matrix(self.damping, transition_matrix)
 
-        lexrank_matrix = power_method(transition_matrix)
+        lexrank_vector = power_method(transition_matrix)
+        results = list(zip(all_sentences, lexrank_vector))
 
-        return sorted(zip(all_sentences, lexrank_matrix), key=lambda x: x[1], reverse=True)
+        if max_results is None:
+            acceptable_indices = range(0, sentence_counter)  # any index is fine, we're including everything, no max
+        else:
+            acceptable_indices = np.argsort(-lexrank_vector)[0:max_results]
+
+        #TODO: bucketing and throwing away score atm, but after refactor include score and don't bucket
+        #just construct Content object
+        bucketed_results = {
+            article_id: [results[i][0] for i in indices if i in acceptable_indices]
+            for article_id, indices in sentences_indices_by_article.items()
+
+        }
+
+        return bucketed_results
 
 
-
-    def _local_vocab(self):
+    def _local_vocab(self, require_vector=False):
         local_vocab = set()
         for article in self.docgroup.articles:
             if article.headline is not None:
                 for token in countworthy_tokens(article.headline):
-                    local_vocab.add(token.lower_)
+                    if not require_vector or token.has_vector:
+                        local_vocab.add(token.lower_)
 
             for paragraph in article.paragraphs:
                 for token in countworthy_tokens(paragraph):
-                    local_vocab.add(token.lower_)
+                    if not require_vector or token.has_vector:
+                        local_vocab.add(token.lower_)
 
         return local_vocab
 

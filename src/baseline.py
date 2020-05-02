@@ -22,6 +22,8 @@ def main():
         output_summary(realized_content)
         bar.next()
 
+    print()
+
 
 
 
