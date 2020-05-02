@@ -27,13 +27,14 @@ class TestOrdering(unittest.TestCase):
         self.selected_content = SelectedContent(doc_group=None, selected_content=selected_content)
 
 
-    def test_chrological_order(self):
-        ordering = Ordering(self.selected_content)
-        first_sent = ordering.ordered_sents[0]
-        last_sent = ordering.ordered_sents[-1]
+    # rework this test when we add chronological ordering back in
+    # def test_chrological_order(self):
+    #     ordering = Ordering(self.selected_content)
+    #     first_sent = ordering.ordered_sents[0]
+    #     last_sent = ordering.ordered_sents[-1]
         
-        self.assertEqual(first_sent.span.text, "THE VALLEY, Anguilla (AP)")
-        self.assertEqual(last_sent.span.text, "That gives him the authority to deploy the state's National Guard and allows him to seize property, order evacuations and suspend tolls on the highways.")
+    #     self.assertEqual(first_sent.span.text, "THE VALLEY, Anguilla (AP)")
+    #     self.assertEqual(last_sent.span.text, "That gives him the authority to deploy the state's National Guard and allows him to seize property, order evacuations and suspend tolls on the highways.")
 
 
     def test_identify_redundant(self):

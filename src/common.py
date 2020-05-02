@@ -1,5 +1,6 @@
 import os
 import logging
+import spacy
 
 SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(SOURCE_DIR)
@@ -23,3 +24,4 @@ ch.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
 
+NLP = spacy.load("en_core_web_lg")

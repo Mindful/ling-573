@@ -2,6 +2,7 @@ import re
 import spacy
 from spacy.tokens import Doc, Span
 from . import clean_text
+from common import NLP
 
 def set_custom_boundaries(doc):
     '''
@@ -24,9 +25,8 @@ def english_nlp():
     quote_getter = lambda span: "\"" in span.text
     Span.set_extension('contains_quote', getter=quote_getter)
 
-    nlp = spacy.load('en_core_web_lg')
-    nlp.add_pipe(set_custom_boundaries, before='parser')
-    return nlp
+    NLP.add_pipe(set_custom_boundaries, before='parser')
+    return NLP
 
 
 nlp_parser = english_nlp()

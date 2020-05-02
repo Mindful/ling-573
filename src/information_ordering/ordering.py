@@ -1,9 +1,8 @@
 import dateutil
 import itertools
-import spacy
+from common import NLP
 
-nlp = spacy.load("en_core_web_lg")
-spacy_stopwords = nlp.Defaults.stop_words
+spacy_stopwords = NLP.Defaults.stop_words
 
 class Ordering:
     def __init__(self, selection_object):
@@ -13,21 +12,9 @@ class Ordering:
 
     def order(self, selection_object):
         '''
-        Given selected content, order sentences according to chronological order (publication date, then order in document)
-        Also removes redundant sentences
+        Given selected content, remove redundant sentences keep ordered by rank score
         '''
-        chronological = self._order_docs_chronologically(selection_object.selected_content)
-        content_objs = [article[2] for article in chronological]
-        flattened_content_objs = list(itertools.chain.from_iterable(content_objs))
-        return remove_redundant_sents(flattened_content_objs)
-
-    def _order_docs_chronologically(self, selected_content):
-        articles_by_date = sorted([
-            (parse_date_from_article_id(article_id), article_id)
-            for article_id in selected_content.keys()
-        ])
-        return [(date, article_id, selected_content[article_id])
-                for date, article_id in articles_by_date]
+        return remove_redundant_sents(selection_object.selected_content)
 
 def remove_redundant_sents(content_objs):
     # will want to factor in weights to determine which sentence to remove, once weights are available
@@ -45,7 +32,9 @@ def is_redundant(sent_1, sent_2):
         # current value (0.87) is chosen by manual inspection of ~20 sentence pairs
         # stripping down to lemmas and removing stop words did NOT seem to help i.e. nlp(" ".join([tok.lemma_ for tok in sent_1 if tok.text not in spacy_stopwords and not tok.is_punct]))
         # might consider adding comparison of doc.ents or doc.noun_chunk overlap
-        return sent_1.similarity(sent_2) > .87
+
+        # this threshold value likely needs to be tuned based on specific content selection strategy
+        return sent_1.similarity(sent_2) > .97
         #return get_max_embedded_similarity(sent_1, sent_2) > .87
     return False
 
@@ -76,6 +65,3 @@ def get_max_embedded_similarity(sent_1, sent_2):
             max_similarity = sim
     return max_similarity
 
-
-def parse_date_from_article_id(article_id):
-    return article_id.split('.')[0][3:]
