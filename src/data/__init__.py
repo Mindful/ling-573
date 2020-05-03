@@ -83,18 +83,17 @@ def _fetch_articles_into_topics(queries, topic_metadatas):
     return topics
 
 
-def _write_out_summary(topic_id, summary_sentences, alphanum_id='1'):
+def _write_out_summary(topic_id, final_content, alphanum_id='1'):
     id_part_1 = topic_id[0:5]
     id_part_2 = topic_id[5:]
     output_filename = id_part_1 + OUTPUT_FILE_STRING + id_part_2 + '.' + alphanum_id
 
     with open(os.path.join(OUTPUT_DIR, output_filename), 'w') as f:
-        f.writelines(x+'\n' for x in summary_sentences)
+        f.writelines(x.realized_text +'\n' for x in final_content)
 
 
 def output_summary(ordering):
     _write_out_summary(ordering.doc_group.topic_id, ordering.ordered_sents)
-    pass
 
 
 def load_all_articles(corpus):

@@ -3,7 +3,6 @@ from preprocessing.topic_doc_group import DocumentGroup
 from content_selection.selection import Selection
 from information_ordering.ordering import Ordering
 from content_realization.realization import Realization
-from content_realization.realization_arc import Realization_Arc
 from progress.bar import Bar
 
 
@@ -12,8 +11,8 @@ def main():
     topics = get_dataset_topics(DEV_TEST)
 
     #Selection.selection_method = Selection.select_ngram
-    #Selection.selection_method = Selection.select_lexrank
-    Selection.selection_method = Selection.select_simple
+    Selection.selection_method = Selection.select_lexrank
+    #Selection.selection_method = Selection.select_simple
 
     bar = Bar('Processing topics...', max=len(topics))
     for topic in topics:

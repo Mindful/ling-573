@@ -15,6 +15,6 @@ class Ordering:
         '''
         Given selected content, return sentences in best order
         '''
-        return [content.realized_text for content in realization_object.realized_content]
+        return [content for content in realization_object.realized_content]
         #return remove_redundant_sents(realization_object.realized_content)
 

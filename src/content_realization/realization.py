@@ -55,11 +55,6 @@ def trim(sentence):
     sentence = remove_sentence_initial_terms(sentence)
     sentence = remove_appositives(sentence)
     sentence = set_initial_word_to_upper(sentence)
-    try:
-        sentence = nlp(sentence)
-        sentence = sentence[:]
-    except:
-        pass
     return sentence
 
 def set_initial_word_to_upper(sentence):

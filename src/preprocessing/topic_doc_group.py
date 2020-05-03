@@ -19,18 +19,8 @@ def set_custom_boundaries(doc):
             token.is_sent_start = False
     return doc
 
-
-def english_nlp():
-    print('Loading spaCy, this may take a moment.') #TODO: replace this with logging once logging is set up
-    quote_getter = lambda span: "\"" in span.text
-    Span.set_extension('contains_quote', getter=quote_getter)
-
-    NLP.add_pipe(set_custom_boundaries, before='parser')
-    return NLP
-
-
-nlp_parser = english_nlp()
-
+Span.set_extension('contains_quote', getter=lambda span: "\"" in span.text)
+NLP.add_pipe(set_custom_boundaries, before='parser')
 
 class DocumentGroup:
     __slots__ = ['topic_id', 'narrative', 'title', 'articles']
@@ -66,10 +56,10 @@ class DocGroupArticle:
 
     def _process_paragraphs(self, paragraphs):
         cleaned = [clean_text(p) for p in paragraphs]
-        return [nlp_parser(p) for p in cleaned if p]
+        return [NLP(p) for p in cleaned if p]
 
 
 def process_text(text):
     if text:
-        return nlp_parser(text)
+        return NLP(text)
     return None

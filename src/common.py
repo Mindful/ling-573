@@ -24,4 +24,5 @@ ch.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
 
+print("Loading spaCy, this may take a moment...")
 NLP = spacy.load("en_core_web_lg")

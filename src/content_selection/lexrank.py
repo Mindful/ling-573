@@ -17,15 +17,6 @@ def is_sentence_useful(sentence, vocab):
     return sum(1 for token in sentence if token.lower_ in vocab)
 
 
-def word_vector_similarity_matrix(all_sentences):
-    similarity_matrix = np.empty((len(all_sentences), len(all_sentences)))
-    for i, sent_i in enumerate(all_sentences):
-        for j, sent_j in enumerate(all_sentences):
-            similarity_matrix[i,j] = sent_i.similarity(sent_j)
-
-    return similarity_matrix
-
-
 def idf_weighted_vector_average(sentence):
     tokens = [token for token in countworthy_tokens(sentence) if token.has_vector]
     idf_scores = np.array([Metrics.idf[token.lower_] for token in tokens])
@@ -37,7 +28,7 @@ def idf_weighted_vector_average(sentence):
     return weighted_average
 
 
-def tf_idf_vector_similarity_matrix(all_sentences):
+def tf_idf_vector_similarity_matrix(all_sentences, _):
     #TODO: lemmatize
     #TODO: how to deal with things that are outside of spacy vocabulary? maybe not here...
 
@@ -47,6 +38,15 @@ def tf_idf_vector_similarity_matrix(all_sentences):
     for i, sent_i in enumerate(all_sentences):
         for j, sent_j in enumerate(all_sentences):
             similarity_matrix[i, j] = 1 - cosine_distance(vectors_for_sentences[i], vectors_for_sentences[j])
+
+    return similarity_matrix
+
+
+def word_vector_similarity_matrix(all_sentences, _):
+    similarity_matrix = np.empty((len(all_sentences), len(all_sentences)))
+    for i, sent_i in enumerate(all_sentences):
+        for j, sent_j in enumerate(all_sentences):
+            similarity_matrix[i,j] = sent_i.similarity(sent_j)
 
     return similarity_matrix
 
@@ -157,8 +157,8 @@ class LexRank:
 
             sentences_indices_by_article[article.id] = index_list
 
-        #similarity_matrix = tf_idf_similarity_matrix(all_sentences, vocab)
-        similarity_matrix = tf_idf_vector_similarity_matrix(all_sentences)
+        similarity_matrix = tf_idf_similarity_matrix(all_sentences, vocab)
+        #similarity_matrix = tf_idf_vector_similarity_matrix(all_sentences, vocab)
 
         transition_matrix = compute_transition_matrix(self.threshold, similarity_matrix)
         transition_matrix = dampen_transition_matrix(self.damping, transition_matrix)
