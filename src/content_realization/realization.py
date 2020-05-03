@@ -4,11 +4,9 @@ class Realization:
     word_quota = 100
 
     def __init__(self, selection_object):
-        #self.ordered_sents = ordering_object.ordered_sents
         self.selected_content = selection_object
         self.doc_group = selection_object.doc_group
         self.realized_content = self.narrow_content(selection_object)
-        #self.summary = self.summarize()
 
 
     def narrow_content(self,selection_object):
@@ -24,54 +22,13 @@ class Realization:
         for i, content in enumerate(sorted_sents):
             remaining_words = self.word_quota - total_words
             trimmed_sentence = trim(content.span)
-            '''
-            text_ = trimmed_sentence.text
-            text_len = len(text_.split())
-            '''
             text_len = len(trimmed_sentence.split())
             if text_len <= remaining_words:
                 content.realized_text = trimmed_sentence
+                total_words += text_len
             else:
                 removed.append(content)
         return [content for content in sorted_sents if content not in removed]
-
-    def summarize(self, complete_sentences = True):
-        '''
-        ** Takes sentences from ordering_object until 100 words reached (only full sentences). **
-        ** No thought currently to order between articles **
-        :param complete_sentences: True means summary will end with a complete sentence. False will fill to exactly 100 words.
-        :return: summary as a list of strings.
-        '''
-        total_words = 0
-        summary = []
-        # Iterate through all spans in selection until we reach 100 words
-        quota_reached = False # Marks whether we've reached word quota. Know when to exit outer loop
-        for cand in self.ordered_sents:
-            if quota_reached:
-                break
-            cand = trim(cand.span)
-            try:
-                cand = cand.text
-            except:
-                #cand could already be a string
-                cand = cand
-            if cand in summary:
-                #avoid adding sentences that are exact duplicates
-                continue
-            remaining_words = self.word_quota - total_words
-            cand_len = len(cand.split()) #I think this is how word count will be measured in evaluation
-            if cand_len <= remaining_words:
-                # if cand will not overfill quota, add whole span to summary
-                summary.append(cand)
-                total_words += cand_len
-            else:
-                if not complete_sentences:
-                    # if cand will overfill quota, take only as many words as necessary to reach quota
-                    summary.append(' '.join(cand.split()[0:remaining_words]))
-                    total_words += self.word_quota
-                quota_reached = True
-                break
-        return summary
 
 
 def trim(sentence):
@@ -128,7 +85,6 @@ def remove_sentence_initial_terms(sentence):
     :return:
     TODO: There are some adverbs that shouldn't be removed, like when.
     '''
-
     ## Remove sentence-initial adverbs and conjunctions ##
     pos = sentence[0].pos_
     pos2 = sentence[0].pos
@@ -190,7 +146,6 @@ def is_redundant(sent_1, sent_2):
         # current value (0.87) is chosen by manual inspection of ~20 sentence pairs
         # stripping down to lemmas and removing stop words did NOT seem to help i.e. nlp(" ".join([tok.lemma_ for tok in sent_1 if tok.text not in spacy_stopwords and not tok.is_punct]))
         # might consider adding comparison of doc.ents or doc.noun_chunk overlap
-
         # this threshold value likely needs to be tuned based on specific content selection strategy
         return sent_1.similarity(sent_2) > .97
         #return get_max_embedded_similarity(sent_1, sent_2) > .87

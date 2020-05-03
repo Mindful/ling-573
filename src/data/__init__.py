@@ -92,8 +92,8 @@ def _write_out_summary(topic_id, summary_sentences, alphanum_id='1'):
         f.writelines(x+'\n' for x in summary_sentences)
 
 
-def output_summary(realization):
-    _write_out_summary(realization.doc_group.topic_id, realization.summary)
+def output_summary(ordering):
+    _write_out_summary(ordering.doc_group.topic_id, ordering.ordered_sents)
     pass
 
 

@@ -20,10 +20,8 @@ def main():
         doc_group = DocumentGroup(topic)
         selected_content = Selection(doc_group)
         realized_content = Realization(selected_content)
-        #ordered_content = Ordering(selected_content)
         ordered_content = Ordering(realized_content)
-        final_content = Realization_Arc(ordered_content)
-        output_summary(final_content)
+        output_summary(ordered_content)
         bar.next()
 
     print()
