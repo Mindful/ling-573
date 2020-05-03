@@ -12,6 +12,7 @@ class Content:
         self.span = content
         self.score = score
         self.article = article
+        self.realized_text = content.text
 
     def __repr__(self):
         return str(self.__dict__)

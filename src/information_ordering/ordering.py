@@ -5,16 +5,17 @@ from common import NLP
 spacy_stopwords = NLP.Defaults.stop_words
 
 class Ordering:
-    def __init__(self, selection_object):
-        self.selected_content = selection_object
-        self.doc_group = selection_object.doc_group
-        self.ordered_sents = self.order(selection_object)
+    def __init__(self, realization_object):
+        self.selected_content = realization_object.selected_content
+        self.realized_content = realization_object
+        self.doc_group = realization_object.doc_group
+        self.ordered_sents = self.order(realization_object)
 
-    def order(self, selection_object):
+    def order(self, realization_object):
         '''
         Given selected content, remove redundant sentences keep ordered by rank score
         '''
-        return remove_redundant_sents(selection_object.selected_content)
+        return remove_redundant_sents(realization_object.realized_content)
 
 def remove_redundant_sents(content_objs):
     # will want to factor in weights to determine which sentence to remove, once weights are available
