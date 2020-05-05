@@ -6,9 +6,7 @@ import unittest
 import datetime
 from collections import namedtuple
 from spacy.tokens import Doc, Span
-
-
-nlp = spacy.load("en_core_web_lg")
+from common import NLP
 
 Metadata = namedtuple('Metadata', ['id', 'title', 'narrative'])
 Article = namedtuple('Article', ['id', 'date', 'type', 'headline', 'paragraphs'])
@@ -16,7 +14,13 @@ Article = namedtuple('Article', ['id', 'date', 'type', 'headline', 'paragraphs']
 class TestPreprocessing(unittest.TestCase):
     def setUp(self):
         topic_metadata = Metadata(id='D1001A', title='Columbine Massacre', narrative='Here is a sample narrative')
-        article_1 = Article(id='APW19990421.0284', date=datetime.date(1999, 4, 21), type=None, headline=None, paragraphs=["LITTLETON, Colo. (AP) -- The sheriff's initial estimate of as  \nmany as 25 dead in the Columbine High massacre was off the mark \napparently because the six SWAT teams that swept the building \ncounted some victims more than once.", 'Sheriff John Stone said Tuesday afternoon that there could be as  \nmany as 25 dead. By early Wednesday, his deputies said the death \ntoll was 15, including the two gunmen.', "The discrepancy occurred because the SWAT teams that picked  \ntheir way past bombs and bodies in an effort to secure building \ncovered overlapping areas, said sheriff's spokesman Steve Davis.", "``There were so many different SWAT teams in there, we were  \nconstantly getting different counts,'' Davis said.", 'As they gave periodic updates through the night, Davis and Stone  \nemphasized the death toll was unconfirmed. They said their priority \nwas making sure the school was safe.'])
+        article_1 = Article(id='APW19990421.0284', date=datetime.date(1999, 4, 21), type=None, headline=None, 
+                            paragraphs=["LITTLETON, Colo. (AP) -- The sheriff's initial estimate of as  \nmany as 25 dead in the Columbine High massacre was off the mark \napparently because the six SWAT teams that swept the building \ncounted some victims more than once.",
+                                        'Sheriff John Stone said Tuesday afternoon that there could be as  \nmany as 25 dead. By early Wednesday, his deputies said the death \ntoll was 15, including the two gunmen.', 
+                                        "The discrepancy occurred because the SWAT teams that picked  \ntheir way past bombs and bodies in an effort to secure building \ncovered overlapping areas, said sheriff's spokesman Steve Davis.",
+                                        "``There were so many different SWAT teams in there, we were  \nconstantly getting different counts,'' Davis said.", 
+                                        'As they gave periodic updates through the night, Davis and Stone  \nemphasized the death toll was unconfirmed. They said their priority \nwas making sure the school was safe.'])
+        
         article_2 = Article(id='APW19990422.0095', date=datetime.date(1999, 4, 22), type=None, headline=None, paragraphs=['BURBANK, Calif. (AP) -- Republican presidential candidate Pat  \nBuchanan says stricter gun laws could not have prevented the deadly \nschool shootings in Littleton, Colo.', "``The question is who has the weapons, the good people or those  \nwho are ugly and warped,'' he said. ``The problem began long before \nthey walked into school.''", 'Fifteen people, including the two killers, died Tuesday in a  \nshooting and bombing spree at Columbine High School.', "``The massacre is a tragic reflection of the dark side of  \nAmerican society,'' Buchanan told reporters Wednesday. ``At \nLittleton, America got a glimpse of the last stop on that train to \nhell America boarded decades ago when we declared that God is dead \nand that each of us is his or her own god who can make up the rules \nas we go along.''"])
         article_3 = Article(id='APW19990427.0078', date=datetime.date(1999, 4, 27), type=None, headline=None, paragraphs=['LITTLETON, Colo. (AP) -- The day that Columbine High School  \nstudents are to return to class has been delayed because so many \nhave been attending funerals for students killed in the April 20 \nmassacre, an administrator said Tuesday.', 'The students are scheduled to begin classes Monday at another  \nschool a few miles away in afternoon sessions until the end of the \nyear, said Barbara Monseu, area administrator for the Jefferson \nCounty School District.', 'Students were originally scheduled to go back Thursday.', "Calling the return to the classroom ``a very important next step  \nin the process of healing,'' Monseu said the first thing Columbine \nstudents will do when they arrive at Chatfield High School is \nattend an assembly to reunite them with their teachers.", "``The teachers are very anxious to see their students again,''  \nshe said.", 'Columbine and Chatfield are sports rivals, but junior John Danos  \nsaid he welcomed the newcomers.', "``I'm fine with it,'' he said. ``We're going to treat them  \nnormal.''", 'To accommodate the 1,965 Columbine students, the school day is  \nbeing split with Chatfield students beginning early in the day and \nColumbine students showing up shortly before 1 p.m.', "To prepare for the resumption of classes, some of Columbine's  \n158 teachers met Tuesday morning for the first time since two \nstudent gunmen fatally shot 12 fellow students and a teacher before \ntaking their own lives."])
         
@@ -69,6 +73,28 @@ class TestPreprocessing(unittest.TestCase):
         doc_group_article = DocGroupArticle(article)
 
         self.assertEqual(len(doc_group_article.paragraphs), 3)
+
+
+    def test_doc_group_article_indices(self):
+        document_group = DocumentGroup(self.topic)
+        article_1_p1 = document_group.articles[0].paragraphs[0]
+        article_1_p2 = document_group.articles[0].paragraphs[1]
+        article_1_p5 = document_group.articles[0].paragraphs[4]
+        article_2_p1 = document_group.articles[1].paragraphs[0]
+
+        self.assertEqual(article_1_p1._.paragraph_index, 0)
+        self.assertEqual(article_1_p2._.paragraph_index, 1)
+        self.assertEqual(article_2_p1._.paragraph_index, 0)
+
+        article_1_p1_sent1 = list(article_1_p1.sents)[0]
+        article_1_p2_sent1 = list(article_1_p2.sents)[0]
+        article_1_p5_sent2 = list(article_1_p5.sents)[1]
+        article_2_p1_sent1 = list(article_2_p1.sents)[0]
+
+        self.assertEqual(article_1_p1_sent1._.sent_index, 0)
+        self.assertEqual(article_1_p2_sent1._.sent_index, 1)
+        self.assertEqual(article_1_p5_sent2._.sent_index, 6)
+        self.assertEqual(article_2_p1_sent1._.sent_index, 0)
 
 
     def test_create_doc_group_article_2(self):
@@ -487,217 +513,217 @@ class TestPreprocessing(unittest.TestCase):
 
 
     def test_is_token_count_worthy(self):
-        token = nlp("--pixar")[0]
+        token = NLP("--pixar")[0]
         self.assertEqual(token.text, "--pixar")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_2(self):
-        token = nlp("a0014")[0]
+        token = NLP("a0014")[0]
         self.assertEqual(token.text, "a0014")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_3(self):
-        token = nlp("13:45")[0]
+        token = NLP("13:45")[0]
         self.assertEqual(token.text, "13:45")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_4(self):
-        token = nlp("art!---------------------")[0]
+        token = NLP("art!---------------------")[0]
         self.assertEqual(token.text, "art!---------------------")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_5(self):
-        token = nlp("                                              ")[0]
+        token = NLP("                                              ")[0]
         self.assertEqual(token.text, "                                              ")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_6(self):
-        token = nlp("2,308.70")[0]
+        token = NLP("2,308.70")[0]
         self.assertEqual(token.text, "2,308.70")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_7(self):
-        token = nlp("2,308.70")[0]
+        token = NLP("2,308.70")[0]
         self.assertEqual(token.text, "2,308.70")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_8(self):
-        token = nlp("2,308.70")[0]
+        token = NLP("2,308.70")[0]
         self.assertEqual(token.text, "2,308.70")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_9(self):
-        token = nlp("17,656")[0]
+        token = NLP("17,656")[0]
         self.assertEqual(token.text, "17,656")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_10(self):
-        token = nlp("-addressing")[0]
+        token = NLP("-addressing")[0]
         self.assertEqual(token.text, "-addressing")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_11(self):
-        token = nlp(".atlantawatergardens")[0]
+        token = NLP(".atlantawatergardens")[0]
         self.assertEqual(token.text, ".atlantawatergardens")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_12(self):
-        token = nlp("/dare")[0]
+        token = NLP("/dare")[0]
         self.assertEqual(token.text, "/dare")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_13(self):
-        token = nlp("000bo")[0]
+        token = NLP("000bo")[0]
         self.assertEqual(token.text, "000bo")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_14(self):
-        token = nlp("0185(58")[0]
+        token = NLP("0185(58")[0]
         self.assertEqual(token.text, "0185(58")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_15(self):
-        token = nlp("0190laurens")[0]
+        token = NLP("0190laurens")[0]
         self.assertEqual(token.text, "0190laurens")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_16(self):
-        token = nlp("0190laurens")[0]
+        token = NLP("0190laurens")[0]
         self.assertEqual(token.text, "0190laurens")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_17(self):
-        token = nlp("07-cox")[0]
+        token = NLP("07-cox")[0]
         self.assertEqual(token.text, "07-cox")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_18(self):
-        token = nlp("07.6'e")[0]
+        token = NLP("07.6'e")[0]
         self.assertEqual(token.text, "07.6'e")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_19(self):
-        token = nlp("1%9]q")[0]
+        token = NLP("1%9]q")[0]
         self.assertEqual(token.text, "1%9]q")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_20(self):
-        token = nlp("1%9]q")[0]
+        token = NLP("1%9]q")[0]
         self.assertEqual(token.text, "1%9]q")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_21(self):
-        token = nlp("bjt-22-cox")[0]
+        token = NLP("bjt-22-cox")[0]
         self.assertEqual(token.text, "bjt-22-cox")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_22(self):
-        token = nlp("boggs:(end")[0]
+        token = NLP("boggs:(end")[0]
         self.assertEqual(token.text, "boggs:(end")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_23(self):
-        token = nlp("box/")[0]
+        token = NLP("box/")[0]
         self.assertEqual(token.text, "box/")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_24(self):
-        token = nlp("c.l.g")[0]
+        token = NLP("c.l.g")[0]
         self.assertEqual(token.text, "c.l.g")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_25(self):
-        token = nlp("charge-(update1")[0]
+        token = NLP("charge-(update1")[0]
         self.assertEqual(token.text, "charge-(update1")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_26(self):
-        token = nlp("~~~ike")[0]
+        token = NLP("~~~ike")[0]
         self.assertEqual(token.text, "~~~ike")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_27(self):
-        token = nlp("|chris")[0]
+        token = NLP("|chris")[0]
         self.assertEqual(token.text, "|chris")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_28(self):
-        token = nlp("zzzzznnappp")[0]
+        token = NLP("zzzzznnappp")[0]
         self.assertEqual(token.text, "zzzzznnappp")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_29(self):
-        token = nlp("fxxfffxf")[0]
+        token = NLP("fxxfffxf")[0]
         self.assertEqual(token.text, "fxxfffxf")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_30(self):
-        token = nlp("x-43a")[0]
+        token = NLP("x-43a")[0]
         self.assertEqual(token.text, "x-43a")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, False)
 
 
     def test_is_token_count_worthy_31(self):
-        token = nlp("zurbirggen")[0]
+        token = NLP("zurbirggen")[0]
         self.assertEqual(token.text, "zurbirggen")
         count_worthy = is_countworthy_token(token)
         self.assertEqual(count_worthy, True)

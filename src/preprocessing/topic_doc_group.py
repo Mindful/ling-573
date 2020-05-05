@@ -20,7 +20,10 @@ def set_custom_boundaries(doc):
     return doc
 
 Span.set_extension('contains_quote', getter=lambda span: "\"" in span.text)
+Span.set_extension('sent_index', default=None)
+Doc.set_extension('paragraph_index', default=None)
 NLP.add_pipe(set_custom_boundaries, before='parser')
+
 
 class DocumentGroup:
     __slots__ = ['topic_id', 'narrative', 'title', 'articles']
@@ -56,7 +59,26 @@ class DocGroupArticle:
 
     def _process_paragraphs(self, paragraphs):
         cleaned = [clean_text(p) for p in paragraphs]
-        return [NLP(p) for p in cleaned if p]
+        return self._process_with_index_in_article(cleaned)
+
+    def _process_with_index_in_article(self, paragraphs):
+        paragraphs = list(enumerate(filter(None, paragraphs)))
+        processed_paragraphs = [self._process_doc(p, i) for i, p in paragraphs]
+        self._add_sent_indices(processed_paragraphs)
+        return processed_paragraphs
+
+    def _process_doc(self, paragraph, index):
+        doc = NLP(paragraph)
+        doc._.paragraph_index = index
+        return doc
+
+    def _add_sent_indices(self, paragraphs):
+        index_counter = 0
+        for p in paragraphs:
+            for s in list(p.sents):
+                s._.sent_index = index_counter
+                index_counter += 1
+
 
 
 def process_text(text):

@@ -50,6 +50,7 @@ def clean_text(text, remove_quotes=False):
     text = re.sub(r'^www.{4,100}$', '', text) # remove urls II
     text = re.sub(r'^\s*[A-Z|\-|\s]{2,50} \(Undated\)\s*', '', text) # remove e.g. BKN-PREVIEW-WEST (Undated)
     text = re.sub(r"\s+\.\s+\.\s+\.", ".", text) # remove . . . 
+    text = re.sub(r"\(\s*\)", "", text) # remove ( )
 
 
     # total junk, no idea

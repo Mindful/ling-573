@@ -1,8 +1,5 @@
-import dateutil
-import itertools
-from common import NLP
 
-spacy_stopwords = NLP.Defaults.stop_words
+
 
 class Ordering:
     def __init__(self, realization_object):
@@ -16,5 +13,4 @@ class Ordering:
         Given selected content, return sentences in best order
         '''
         return [content for content in realization_object.realized_content]
-        #return remove_redundant_sents(realization_object.realized_content)
 
