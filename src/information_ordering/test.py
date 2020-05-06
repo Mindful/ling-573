@@ -80,7 +80,7 @@ class TestOrdering(unittest.TestCase):
 
     def test_chronological_ordering_1(self):
         sents = self.realization_obj.realized_content.copy()
-        first_sent = self.ordered_content.choose_starting_sentence(sents)
+        first_sent = self.sent_a
         sents.remove(first_sent)
 
         next_sent = self.ordered_content.select_next_sentence(first_sent, sents, 0, 0, 1)

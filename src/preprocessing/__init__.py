@@ -53,6 +53,7 @@ def clean_text(text, remove_quotes=False):
     text = re.sub(r"\(\s*\)", "", text) # remove ( )
 
 
+
     # total junk, no idea
     text = re.sub(r'^\s*\(?[A-Za-z]{2}\/[A-Za-z0-9]{2,4}\)?$', '', text) # remove e.g. po/pi04, em/ea04, (lc/ml)
     text = re.sub(r'^\s*\(?[a-z]{2}\-[a-z0-9]{2,3}\s?(\/[a-z]{2,3})?\)?$', '', text) # remove e.g. sn-sjs, (pd-fg/imj), (mb-mn/pp)
