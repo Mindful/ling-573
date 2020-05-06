@@ -1,22 +1,11 @@
 import unittest
 from collections import namedtuple
-import spacy
 from content_realization.realization import is_redundant
 from common import NLP
 
 Content = namedtuple('Content', ['span', 'weight'])
 
-class TestOrdering(unittest.TestCase):
-    # rework this test when we add chronological ordering back in
-    # def test_chrological_order(self):
-    #     ordering = Ordering(self.ordered_sents)
-    #     first_sent = ordering.ordered_sents[0]
-    #     last_sent = ordering.ordered_sents[-1]
-        
-    #     self.assertEqual(first_sent.span.text, "THE VALLEY, Anguilla (AP)")
-    #     self.assertEqual(last_sent.span.text, "That gives him the authority to deploy the state's National Guard and allows him to seize property, order evacuations and suspend tolls on the highways.")
-
-
+class TestContentRealization(unittest.TestCase):
     def test_identify_redundant(self):
         content_obj = Content(span=NLP("That gives him the authority to deploy the state's National Guard and allows him to seize property, order evacuations and suspend tolls on the highways.")[:], weight=None)
         content_obj_2 = Content(span=NLP("That gives him the authority to deploy the state's National Guard and allows him to seize property, order evacuations and suspend tolls on the highways.")[:], weight=None)

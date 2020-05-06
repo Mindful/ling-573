@@ -30,7 +30,7 @@ class DocumentGroup:
 
     def __init__(self, topic):
         self.topic_id = topic.id
-        self.narrative = process_text(topic.narrative)
+        self.narrative = process_span(topic.narrative)
         self.title = topic.title
         self.articles = [DocGroupArticle(article) for article in topic.articles]
 
@@ -47,7 +47,7 @@ class DocGroupArticle:
     def __init__(self, article):
         self.id = article.id
         self.date = article.date
-        self.headline = process_text(article.headline)
+        self.headline = self._process_headline(article.headline)
         self.type = article.type
         self.paragraphs = self._process_paragraphs(article.paragraphs)
 
@@ -79,9 +79,15 @@ class DocGroupArticle:
                 s._.sent_index = index_counter
                 index_counter += 1
 
+    def _process_headline(self, text):
+        headline = process_span(text)
+        if headline:
+            headline._.sent_index = -1
+        return headline
 
 
-def process_text(text):
+
+def process_span(text):
     if text:
-        return NLP(text)
+        return NLP(text)[:]
     return None

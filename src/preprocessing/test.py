@@ -32,7 +32,7 @@ class TestPreprocessing(unittest.TestCase):
         
         self.assertEqual(document_group.topic_id, self.topic.id)
         self.assertEqual(document_group.title, self.topic.title)
-        self.assertEqual(type(document_group.narrative), Doc)
+        self.assertEqual(type(document_group.narrative), Span)
         self.assertEqual(document_group.narrative.text, self.topic.narrative)
         self.assertEqual(len(document_group.articles), 3)
         self.assertEqual(type(document_group.articles[0]), DocGroupArticle)
