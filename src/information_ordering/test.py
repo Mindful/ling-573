@@ -6,6 +6,7 @@ from information_ordering.ordering import Ordering
 from preprocessing.topic_doc_group import DocumentGroup, DocGroupArticle, clean_text
 from content_selection.selection import Content
 from common import NLP
+import numpy as np
 
 Metadata = namedtuple('Metadata', ['id', 'title', 'narrative'])
 Article = namedtuple('Article', ['id', 'date', 'type', 'headline', 'paragraphs'])
@@ -59,7 +60,7 @@ class TestOrdering(unittest.TestCase):
         realized_content = [self.sent_c, self.sent_d, self.sent_a, self.sent_b, self.sent_e, self.sent_f]
         realization_obj = Realization(selected_content=realized_content, doc_group=document_group, realized_content=realized_content)
         self.realization_obj = realization_obj
-        self.ordered_content = Ordering(realization_obj)
+        self.ordered_content = Ordering(realization_obj, False)
 
 
     def test_sentence_indices(self):
@@ -74,32 +75,34 @@ class TestOrdering(unittest.TestCase):
 
 
     def test_select_first_sentence(self):
-        first_sent = self.ordered_content.choose_starting_sentence(self.realization_obj.realized_content)
+        succession_probs = np.zeros(shape=(len(self.realization_obj.realized_content), len(self.realization_obj.realized_content)))
+        first_sent = self.ordered_content.choose_starting_sentence(self.realization_obj.realized_content, succession_probs)
         self.assertEqual(first_sent, self.sent_a)
 
 
     def test_chronological_ordering_1(self):
         sents = self.realization_obj.realized_content.copy()
+        succession_probs = np.zeros(shape=(len(sents), len(sents)))
         first_sent = self.sent_a
         sents.remove(first_sent)
 
-        next_sent = self.ordered_content.select_next_sentence(first_sent, sents, 0, 0, 1)
+        next_sent = self.ordered_content.select_next_sentence(first_sent, 0, sents, succession_probs, 0, 0, 1)
         self.assertEqual(next_sent, self.sent_e)
 
         sents.remove(next_sent)
-        next_sent_2 = self.ordered_content.select_next_sentence(next_sent, sents, 0, 0, 1)
+        next_sent_2 = self.ordered_content.select_next_sentence(next_sent, 1, sents, succession_probs, 0, 0, 1)
         self.assertEqual(next_sent_2, self.sent_b)
 
         sents.remove(next_sent_2)
-        next_sent_3 = self.ordered_content.select_next_sentence(next_sent_2, sents, 0, 0, 1)
+        next_sent_3 = self.ordered_content.select_next_sentence(next_sent_2, 2, sents, succession_probs, 0, 0, 1)
         self.assertEqual(next_sent_3, self.sent_c)
 
         sents.remove(next_sent_3)
-        next_sent_4 = self.ordered_content.select_next_sentence(next_sent_3, sents, 0, 0, 1)
+        next_sent_4 = self.ordered_content.select_next_sentence(next_sent_3, 3, sents, succession_probs, 0, 0, 1)
         self.assertEqual(next_sent_4, self.sent_f)
 
         sents.remove(next_sent_4)
-        next_sent_5 = self.ordered_content.select_next_sentence(next_sent_4, sents, 0, 0, 1)
+        next_sent_5 = self.ordered_content.select_next_sentence(next_sent_4, 4, sents, succession_probs, 0, 0, 1)
         self.assertEqual(next_sent_5, self.sent_d)
 
 

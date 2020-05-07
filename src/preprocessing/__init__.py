@@ -20,18 +20,6 @@ def is_countworthy_token(token):
 
 
 def clean_text(text, remove_quotes=False):
-    # what all should happen here?
-
-    # remove (or convert?) the location parenthetical that begins most articles, e.g. "LITTLETON, Colo. (AP) --"
-    text = re.sub(r'^.{0,50}\(AP\) (--)*', '', text) # remove (AP) -- and previous text for anything up to 50 chars from beginning of line, 
-    text = re.sub(r'^[A-Z]{2,}[,|\w|\d|\s]*\(\w+\)\s*--', '', text)  # remove loc e.g. BANGKOK, April 2 (Xinhua) --
-    text = re.sub(r'^[A-Z|\-|\.|,|\s]{2,50}\s+[A-Z|a-z|\.]{0,50}\s+--', '', text) # remove loc and --  e.g. WEST PALM BEACH, Fla. -- 
-    text = re.sub(r'^.{0,50}\(JP\):? (--)*', '', text) # remove (JP) -- and previous text for anything up to 50 chars from beginning of line, e.g JAKARTA (JP)
-    text = re.sub(r'^[A-Z|\-|\.|\s]{2,100}\(.+\)\s*_', '', text)  # remove loc e.g.   FED-GREENSPAN (Undated) _ 
-    text = re.sub(r'^\s*_+', '', text) # remove starting underscore, e.g. "_ The protocol obliges industrialized "
-    text = re.sub(r'^[A-Z]{2,}[A-Z |\w|,|\.]*_', '', text) # remove location and underscore, e.g. "NEW YORK _", but don't remove "The letter _ seen by The Associated Press _ said senior leaders"
-    text = re.sub(r'^[A-Z]{0,50} --', '', text) # remove loc, e.g. ATLANTA --
-
     # taglines, websites, etc.
     text = re.sub(r'^\s*on the net.*$', '', text, flags=re.IGNORECASE) # remove 'on the net' and everything following
     text = re.sub(r'.{0,50}e-?mail address is.{0,100}', '', text, flags=re.IGNORECASE)  # remove email line e.g. Bob Keefe's e-mail address is bkeefecoxnews.com
@@ -45,14 +33,26 @@ def clean_text(text, remove_quotes=False):
     text = re.sub(r'\s*pager:.{0,100}', '', text, flags=re.IGNORECASE)  # remove Pager: (800) 946-4645 (PIN 599-4539).
     text = re.sub(r'^\s*technical problems.{0,100}', '', text, flags=re.IGNORECASE)  # remove e.g. TECHNICAL PROBLEMS:   Peter Trigg
     text = re.sub(r'^\s*questions or.{0,100}', '', text, flags=re.IGNORECASE)  # remove e.g. QUESTIONS OR RERUNS:
+    text = re.sub(r"^\s*With photo\s*(\w+\s*){0,5}\.?", "", text, flags=re.IGNORECASE) # remove With photo 
     text = re.sub(r'^\s*With photo.', '', text, flags=re.IGNORECASE)  # remove With photo.
     text = re.sub(r'^https?://\S*$', '', text) # remove urls
     text = re.sub(r'^www.{4,100}$', '', text) # remove urls II
     text = re.sub(r'^\s*[A-Z|\-|\s]{2,50} \(Undated\)\s*', '', text) # remove e.g. BKN-PREVIEW-WEST (Undated)
     text = re.sub(r"\s+\.\s+\.\s+\.", ".", text) # remove . . . 
     text = re.sub(r"\(\s*\)", "", text) # remove ( )
+    text = re.sub(r"^\s*(SOURCES:)+\s*(\w+\s*){0,6},?\sstaff reporting.?", "", text, flags=re.IGNORECASE) # remove staff reporting, e.g. Epa chesapeake bay program, staff reporting
+    text = re.sub(r",?\sstaff reporting.?", "", text, flags=re.IGNORECASE) # remove staff reporting not at beginning of sentence
 
 
+    # remove (or convert?) the location parenthetical that begins most articles, e.g. "LITTLETON, Colo. (AP) --"
+    text = re.sub(r'^.{0,50}\(AP\) (--)*', '', text) # remove (AP) -- and previous text for anything up to 50 chars from beginning of line, 
+    text = re.sub(r'^[A-Z]{2,}[,|\w|\d|\s]*\(\w+\)\s*--', '', text)  # remove loc e.g. BANGKOK, April 2 (Xinhua) --
+    text = re.sub(r'^[A-Z|\-|\.|,|\s]{2,50}\s+[A-Z|a-z|\.]{0,50}\s+--', '', text) # remove loc and --  e.g. WEST PALM BEACH, Fla. -- 
+    text = re.sub(r'^.{0,50}\(JP\):? (--)*', '', text) # remove (JP) -- and previous text for anything up to 50 chars from beginning of line, e.g JAKARTA (JP)
+    text = re.sub(r'^[A-Z|\-|\.|\s]{2,100}\(.+\)\s*_', '', text)  # remove loc e.g.   FED-GREENSPAN (Undated) _ 
+    text = re.sub(r'^\s*_+', '', text) # remove starting underscore, e.g. "_ The protocol obliges industrialized "
+    text = re.sub(r'^[A-Z]{2,}[A-Z |\w|,|\.]*_', '', text) # remove location and underscore, e.g. "NEW YORK _", but don't remove "The letter _ seen by The Associated Press _ said senior leaders"
+    text = re.sub(r'^[A-Z]{0,50} --', '', text) # remove loc, e.g. ATLANTA --
 
     # total junk, no idea
     text = re.sub(r'^\s*\(?[A-Za-z]{2}\/[A-Za-z0-9]{2,4}\)?$', '', text) # remove e.g. po/pi04, em/ea04, (lc/ml)
@@ -63,7 +63,6 @@ def clean_text(text, remove_quotes=False):
     text = re.sub(r'^\.+$', '', text)  # remove empty ... lines, e.g. "." or "..."
     text = re.sub(r'.*-.*-.*\s+', '', text)  # remove Bc-fla-lafave-deal 
     text = re.sub(r'\( \) --', '', text)  # remove ( ) --
-
 
 
     # news things

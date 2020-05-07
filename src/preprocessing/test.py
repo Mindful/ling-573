@@ -452,6 +452,18 @@ class TestPreprocessing(unittest.TestCase):
         self.assertEqual(cleaned, "")
 
 
+    def test_cleaning_staff_reporting(self):
+        text = "SOURCES: Epa chesapeake bay program, staff reporting"
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
+    def test_cleaning_with_photo(self):
+        text = "With photo of lafave."
+        cleaned = clean_text(text)
+        self.assertEqual(cleaned, "")
+
+
     def test_cleaning_website(self):
         text = "www.nejm.org"
         cleaned = clean_text(text)

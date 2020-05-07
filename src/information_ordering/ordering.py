@@ -61,13 +61,13 @@ class Ordering:
             score += np.sum(succession_probs[i])
             scores.append((score, sentence))
 
-        return sorted(scores)[0][1]
+        return sorted(scores, key=itemgetter(0))[-1][1]
 
 
     def select_next_sentence(self, current_sent, current_index, remaining_sents, succession_probs, 
                              topical_weight=0.1, succession_weight=0.3, chrono_weight=0.3):
         '''
-        Determine next best sentence candidate from weighted expert
+        Determine next best sentence candidate from weighted experts for chronology, topicality, and succession
         '''
         scores = []
 
@@ -80,7 +80,7 @@ class Ordering:
                                   + (chronological_score * chrono_weight)
             scores.append((weighted_pref_score, candidate))
 
-        return sorted(scores, key=lambda x: x[0])[-1][1]
+        return sorted(scores, key=itemgetter(0))[-1][1]
 
 
     def _calculate_topical_score(self, current, candidate):
