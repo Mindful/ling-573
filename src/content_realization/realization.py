@@ -1,7 +1,10 @@
 from content_realization.sentence_similarity import is_redundant
 import configparser
+import os.path
+
+config_filepath = os.path.join('content_realization','config.ini')
 config = configparser.ConfigParser()
-config.read('content_realization\config.ini')
+config.read(config_filepath)
 
 class Realization:
 
