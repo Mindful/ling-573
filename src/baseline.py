@@ -15,7 +15,7 @@ def main():
     #Selection.selection_method = Selection.select_simple
 
     bar = Bar('Processing topics...', max=len(topics))
-    for topic in topics[:2]:
+    for topic in topics:
         doc_group = DocumentGroup(topic)
         selected_content = Selection(doc_group)
         realized_content = Realization(selected_content)
