@@ -15,7 +15,6 @@ class NgramMetrics:
 
     def clean_headline(self,headline):
         cleaned = None
-
         return cleaned
 
     def get_entities(self,document):

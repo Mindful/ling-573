@@ -56,20 +56,27 @@ class Selection:
         return tuple(selections)
 
     def select_ngram(self):
-        #TODO: rewrite for new content selection paradigm to return Content objects with scores
-        raise RuntimeError("Deprecated; still performs selection per article")
-        headline = document_group_article.headline
-        sentences = self._get_sentences(document_group_article)
-        NUM_SENTENCES = min(5, len(sentences))
+        METRICS = NgramMetrics(self.doc_group)
+        content = []
+        for article in self.doc_group.articles:
+            headline = article.headline
+            sentences = self._get_sentences(article)
+            NUM_SENTENCES = min(1, len(sentences))
 
-        scores = sorted([(i, metrics.score(sentences[i], headline, 0.4, 0.7, 0.05, 0.05))
+            scores = sorted([(i, METRICS.score(sentences[i], headline, 0.4, 0.7, 0.00, 0.00))
                          for i in range(len(sentences))], key=lambda x: x[1], reverse=True)
 
-        selections = sorted([scores[n]
-                             for n in range(NUM_SENTENCES)],
-                            key=lambda x: x[0])  # get the sentence indicies in chronological order
-
-        return tuple([sentences[tupl[0]] for tupl in selections])
+            selections = sorted([scores[n]
+                                for n in range(NUM_SENTENCES)],
+                                key=lambda x: x[0])  # get the sentence indicies in chronological order
+            for tupl in selections:
+                sentence = sentences[tupl[0]]
+                score = tupl[1]
+                if len(sentence) > 4:
+                    content.append(Content(sentence,score,article))
+                else:
+                    pass
+        return content
 
     def select_simple(self):
         content = []
@@ -78,7 +85,6 @@ class Selection:
             content.append(Content(next(article.paragraphs[-1].sents), 1, article))
 
         return content
-
 
     def select_lexrank(self):
         lexrank_results, sentence_indices_by_article = LexRank(self.doc_group, threshold=None).rank()
