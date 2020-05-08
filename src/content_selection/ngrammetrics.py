@@ -5,7 +5,21 @@ STOP_WORDS = spacy.lang.en.stop_words.STOP_WORDS
 class NgramMetrics:
     def __init__(self,document_group):
         self.documents = document_group
-        self.unigrams, self.bigrams, self.trigrams = self.get_grams()
+        self.unigrams, self.unigram_size, self.bigrams, self.bigram_size, self.trigrams,self.trigram_size = self.get_grams()
+
+    def re_weight(self,data,distribution):
+        if distribution == 1:
+            for unigram in data:
+                self.unigrams[unigram] = self.unigrams[unigram] - 1/self.unigram_size
+                self.unigram_size -= 1
+        elif distribution == 2:
+            for bigram in data:
+                self.bigrams[bigram] = self.bigrams[bigram]
+
+        elif distribution == 3:
+            for trigram in data:
+                self.trigrams[trigram] = self.trigrams[trigram] - 1/self.trigram_size
+        return True
 
     def accept_token(self,token):
         tok_str = str(token).lower()
@@ -58,20 +72,24 @@ class NgramMetrics:
         unigrams = {unigram:(unigrams[unigram]/num_unigrams) for unigram in unigrams}
         bigrams = {bigram: (bigrams[bigram] / num_bigrams) for bigram in bigrams}
         trigrams = {trigram: (trigrams[trigram]/num_trigrams) for trigram in trigrams}
-        return unigrams, bigrams, trigrams
+        return unigrams, num_unigrams, bigrams, num_bigrams, trigrams, num_trigrams
 
     def unigram_score(self,sentence, headline):
-        probas = np.array([self.unigrams[word]  for word in sentence])
+        unigrams = [word for word in sentence]
+        probas = np.array([self.unigrams[word]  for word in unigrams])
+        self.re_weight(unigrams,1)
         return np.sum(probas)/len(sentence)
 
     def bigram_score(self,sentence, headline):
         bigrams = [sentence[i-1] + ' ' + sentence[i] for i in range(1,len(sentence))]
         probas = np.array([ self.bigrams[bigram]  for bigram in bigrams])
+        self.re_weight(bigrams,2)
         return np.sum(probas)/len(sentence)
 
     def trigram_score(self,sentence):
         trigrams = [sentence[i-2] + ' ' + sentence[i-1] + ' ' + sentence[i] for i in range(2,len(sentence))]
         probas = np.array([ self.trigrams[trigram]  for trigram in trigrams])
+        self.re_weight(trigrams,3)
         return np.sum(probas)/len(sentence)
 
     def get_headline_score(self,sentence,headline,lambda1,lambda2):

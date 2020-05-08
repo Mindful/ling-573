@@ -61,6 +61,7 @@ class Selection:
         for article in self.doc_group.articles:
             headline = article.headline
             sentences = self._get_sentences(article)
+            sentences = [s for s in  sentences if "\"" not in str(s)]
             NUM_SENTENCES = min(1, len(sentences))
 
             scores = sorted([(i, METRICS.score(sentences[i], headline, 0.4, 0.7, 0.00, 0.00))
