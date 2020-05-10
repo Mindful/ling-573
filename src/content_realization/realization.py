@@ -2,6 +2,7 @@
 from sentence_similarity import is_redundant
 import configparser
 import os.path
+import re
 
 config_filepath = os.path.join('content_realization','config.ini')
 config = configparser.ConfigParser()
@@ -62,8 +63,29 @@ def trim(sentence):
     #####################################################
     sentence = remove_sentence_initial_terms(sentence)
     sentence = remove_appositives(sentence)
-    sentence = set_initial_word_to_upper(sentence)
+    sentence = clean_up_sentence(sentence)
     return sentence
+
+def clean_up_sentence(sentence):
+    '''
+    ** Take care of little details to make sentence readable and grammatical after editing **
+    :param sentence: string, the sentence for the summary
+    :return: string in printable form
+    '''
+    ret = set_initial_word_to_upper(sentence)
+    ret = remove_extra_spaces(ret)
+    return ret
+
+def remove_extra_spaces(sentence):
+    '''
+    ** remove extra spaces from sentence, namely final spaces before punctuation **
+    :param sentence: string
+    :return: string
+    '''
+    ret = re.sub("  +"," ",sentence)
+    ret = re.sub(" +([.?!])$","\g<1>",sentence)
+    return ret
+
 
 def set_initial_word_to_upper(sentence):
     '''
@@ -76,7 +98,10 @@ def set_initial_word_to_upper(sentence):
         sentence = sentence.text
     except:
         sentence = sentence
-    sentence = sentence.capitalize()
+    #sentence = sentence.capitalize()
+    sentence_list = sentence.split()
+    sentence_list[0] = sentence_list[0].capitalize()
+    sentence = " ".join(sentence_list)
     return sentence
 
 
@@ -122,7 +147,6 @@ def remove_appositives(sentence):
         #Find start index
         j = i
         found_boundary = False
-        #while not found_boundary:
         while j>0:
             j = j-1
             if sentence.doc[j].is_punct:
@@ -130,13 +154,10 @@ def remove_appositives(sentence):
             else:
                 j = j+1
                 break
-                #found_boundary = True
         start_index = j
         #Find end index
         k = i
         found_boundary = False
-        #while not found_boundary:
-        #while k < len(sentence)-3: # don't consider final tok in sentence because we want sentence-final punctuation to stay
         while k < len(sentence)-2: # don't consider final tok in sentence because we want sentence-final punctuation to stay
             k = k+1
             if sentence.doc[k].is_punct:
@@ -159,24 +180,6 @@ def remove_appositives(sentence):
         new_output = sentence.doc[start_index:sentence[len(sentence)-1].i+1]
         new_output = new_output.text
         output_texts.append(new_output)
-    '''
-    span_start = 0
-    for i in range(0,len(sentence)):
-        tok = sentence[i]
-        if tok.idx in indices_to_remove:
-            span_end = i
-            #appositives could have commas on either side to remove as well
-            if i > 0 and sentence[i-1].text == ',':
-                span_end -= 1
-            if span_end != span_start:
-                output_spans.append(sentence[span_start:span_end])
-            if i < len(sentence)-1 and sentence[i+1].text == ',':
-                i = i+1 #does this work?
-            span_start = i+1
-        elif i == len(sentence)-1:
-            output_spans.append(sentence[span_start:i+1])
-    '''
-    #output = ' '.join([s.text for s in output_spans])
     output = ' '.join(output_texts)
     return output
 
