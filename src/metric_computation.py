@@ -1,11 +1,9 @@
-from data import load_all_articles, load_sample_articles, configure_local, DataManager, DATA_DIR
+from data import load_all_articles, configure_local, DataManager, DATA_DIR
 import spacy
 import math
 from collections import defaultdict, Counter
 import os
-import pickle
 from progress.bar import Bar
-from math import log2
 from sklearn.feature_extraction import DictVectorizer
 import scipy.sparse
 import csv
@@ -17,6 +15,7 @@ from preprocessing import is_countworthy_token, clean_text
 WORD_FREQ_BY_DOC = 'word_freq_by_doc'
 IDF_SCORES = 'idf_scores'
 IDF_META_DATA = 'idf_meta_data'
+LEMMATIZED = '_lemmatized'
 
 
 
@@ -24,7 +23,7 @@ def metric_file_name(metric_name, corpus):
     return os.path.join(DATA_DIR, corpus.name + '_' + metric_name)
 
 
-def compute_word_counts_by_doc(corpus):
+def compute_word_counts_by_doc(corpus, lemmatized=False):
 
     print('Loading spaCy...')
     tokenizer = spacy.load("en_core_web_lg", disable=['tagger', 'parser', 'ner'])
@@ -43,7 +42,10 @@ def compute_word_counts_by_doc(corpus):
     for doc, article_id in tokenizer.pipe(spacy_gen, as_tuples=True):
         for token in doc:
             if is_countworthy_token(token):
-                word_counts[article_id][token.lower_] +=1
+                if lemmatized:
+                    word_counts[article_id][token.lemma_] += 1
+                else:
+                    word_counts[article_id][token.lower_] += 1
         bar.next()
 
     bar.finish()
@@ -53,34 +55,40 @@ def compute_word_counts_by_doc(corpus):
     sparse_vector = vectorizer.fit_transform(word_counts.values())
     vocabulary = vectorizer.get_feature_names()
 
-
+    metric_name = WORD_FREQ_BY_DOC + LEMMATIZED if lemmatized else WORD_FREQ_BY_DOC
     print('Saving data for sparse vector with shape', sparse_vector.shape, '...')
-    scipy.sparse.save_npz(metric_file_name(WORD_FREQ_BY_DOC+'.vector', corpus), sparse_vector)
-    with open(metric_file_name(WORD_FREQ_BY_DOC+'.articles', corpus), 'w', newline='') as f:
+    scipy.sparse.save_npz(metric_file_name(metric_name+'.vector', corpus), sparse_vector)
+    with open(metric_file_name(metric_name+'.articles', corpus), 'w', newline='') as f:
         wr = csv.writer(f)
         wr.writerow(article_names)
 
-    with open(metric_file_name(WORD_FREQ_BY_DOC+'.vocab', corpus), 'w', newline='') as f:
+    with open(metric_file_name(metric_name+'.vocab', corpus), 'w', newline='') as f:
         wr = csv.writer(f)
         wr.writerow(vocabulary)
 
     print("Done")
 
 
-def get_words_by_doc(corpus):
-    sparse_vector = scipy.sparse.load_npz(metric_file_name(WORD_FREQ_BY_DOC+'.vector.npz', corpus))
-    with open(metric_file_name(WORD_FREQ_BY_DOC+'.vocab', corpus), newline='') as f:
+def get_words_by_doc(corpus, lemmatized=False):
+    metric_name = WORD_FREQ_BY_DOC + LEMMATIZED if lemmatized else WORD_FREQ_BY_DOC
+
+    sparse_vector = scipy.sparse.load_npz(metric_file_name(metric_name+'.vector.npz', corpus))
+    with open(metric_file_name(metric_name+'.vocab', corpus), newline='') as f:
         vocabulary = next(csv.reader(f))
 
-    with open(metric_file_name(WORD_FREQ_BY_DOC+'.articles', corpus), newline='') as f:
+    with open(metric_file_name(metric_name+'.articles', corpus), newline='') as f:
         articles = next(csv.reader(f))
 
     return sparse_vector, articles, vocabulary
 
 
-def get_idf(corpus):
-    idf_scores_filename = metric_file_name(IDF_SCORES, corpus)
-    idf_meta_filename = metric_file_name(IDF_META_DATA, corpus)
+def get_idf(corpus, lemmatized=False):
+    if lemmatized:
+        idf_scores_filename = metric_file_name(IDF_SCORES+LEMMATIZED, corpus)
+        idf_meta_filename = metric_file_name(IDF_META_DATA+LEMMATIZED, corpus)
+    else:
+        idf_scores_filename = metric_file_name(IDF_SCORES, corpus)
+        idf_meta_filename = metric_file_name(IDF_META_DATA, corpus)
 
     try:
         with open(idf_meta_filename) as meta_data_file:
@@ -106,7 +114,6 @@ def get_idf(corpus):
         return idf_scores
 
 
-
 def calculate_idf_score(sparse_vector, vocabulary, smooth=False):
     vocab_indice_article_counts = Counter(sparse_vector.nonzero()[1])
     total_number_docs = sparse_vector.shape[0]
@@ -118,9 +125,12 @@ def calculate_idf_score(sparse_vector, vocabulary, smooth=False):
 
     idf_scores = defaultdict(lambda: default_value)
 
+    bar = Bar('Computing IDF scores...', max=len(vocabulary))
     for i, word in enumerate(vocabulary):
         word_doc_count = vocab_indice_article_counts[i]
         idf_scores[word] = math.log(total_number_docs / word_doc_count)
+        bar.next()
+    bar.finish()
 
     return (default_value, idf_scores)
 
@@ -131,6 +141,10 @@ class Metrics:
 
 
 if __name__ == '__main__':
-    configure_local('/home/josh/clms/scrapbox/corpora') #TODO: not hardcode my local dir
-    idf = get_idf(DataManager.corpora[0])
-    print('wiggity woo')
+    #configure_local('/home/josh/clms/scrapbox/corpora') #TODO: not hardcode my local dir
+    print("Counting words and computing IDF (lemmatized and unlemmatized) for all corpora...")
+    for corpus in DataManager.corpora:
+        compute_word_counts_by_doc(corpus, False)
+        compute_word_counts_by_doc(corpus, True)
+        get_idf(corpus, False)
+        get_idf(corpus, True)
