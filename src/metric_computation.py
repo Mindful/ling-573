@@ -99,19 +99,23 @@ def get_idf(corpus, lemmatized=False):
             return idf_scores
 
     except FileNotFoundError:
-        print("Recomputing IDF data, please wait a moment") #TODO: should be logging
-        sparse_vector, _articles, vocabulary = get_words_by_doc(corpus)
-        default_value, idf_scores = calculate_idf_score(sparse_vector, vocabulary, True)
-        idf_data = {
-            'default_value': default_value,
-            'vocabulary': list(idf_scores.keys())
-        }
+        try:
+            print("Recomputing IDF data, please wait a moment") #TODO: should be logging
+            sparse_vector, _articles, vocabulary = get_words_by_doc(corpus)
+            default_value, idf_scores = calculate_idf_score(sparse_vector, vocabulary, True)
+            idf_data = {
+                'default_value': default_value,
+                'vocabulary': list(idf_scores.keys())
+            }
 
-        with open(idf_meta_filename, 'w') as outfile:
-            json.dump(idf_data, outfile)
-        np.save(idf_scores_filename, np.array(list(idf_scores.values())))
+            with open(idf_meta_filename, 'w') as outfile:
+                json.dump(idf_data, outfile)
+            np.save(idf_scores_filename, np.array(list(idf_scores.values())))
 
-        return idf_scores
+            return idf_scores
+        except FileNotFoundError:
+            print("Unable to find necessary files to compute IDF data so it will be left blank. May cause problems")
+            return None
 
 
 def calculate_idf_score(sparse_vector, vocabulary, smooth=False):
