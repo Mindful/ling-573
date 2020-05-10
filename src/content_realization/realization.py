@@ -111,43 +111,54 @@ def remove_appositives(sentence):
     indices_to_remove = set()
     for i in range(0,len(sentence)):
         if sentence[i].dep_ == 'appos':
-            indices_to_remove.add(sentence[i].idx)
+            #indices_to_remove.add(sentence[i].idx)
+            indices_to_remove.add(sentence[i].i)
             for c in sentence[i].children:
-                indices_to_remove.add(c.idx)
+                #indices_to_remove.add(c.idx)
+                indices_to_remove.add(c.i)
 
     spans_to_remove = [] #list of tuples (start, end) of spans to remove
-    for i in range(indices_to_remove):
+    for i in indices_to_remove:
         #Find start index
         j = i
         found_boundary = False
-        while not found_boundary:
+        #while not found_boundary:
+        while j>0:
             j = j-1
-            if sentence.doc[j].is_punctuation():
+            if sentence.doc[j].is_punct:
                 continue
             else:
                 j = j+1
-                found_boundary = True
+                break
+                #found_boundary = True
         start_index = j
         #Find end index
         k = i
         found_boundary = False
-        while not found_boundary:
+        #while not found_boundary:
+        #while k < len(sentence)-3: # don't consider final tok in sentence because we want sentence-final punctuation to stay
+        while k < len(sentence)-2: # don't consider final tok in sentence because we want sentence-final punctuation to stay
             k = k+1
-            if sentence.doc[j].is_punctuation():
+            if sentence.doc[k].is_punct:
                 continue
             else:
                 k = k-1
-                found_boundary = True
+                break
+                #found_boundary = True
         end_index = k
         spans_to_remove.append((start_index,end_index))
     start_index = sentence[0].i
     output_texts = []
+    spans_to_remove = sorted(spans_to_remove, key=lambda x:x[0])
     for (a,b) in spans_to_remove:
         new_output = sentence.doc[start_index:a]
         new_output = new_output.text
         output_texts.append(new_output)
-        start_index = b
-
+        start_index = b+1
+    if start_index <= sentence[len(sentence)-1].i+1:
+        new_output = sentence.doc[start_index:sentence[len(sentence)-1].i+1]
+        new_output = new_output.text
+        output_texts.append(new_output)
     '''
     span_start = 0
     for i in range(0,len(sentence)):
@@ -166,7 +177,7 @@ def remove_appositives(sentence):
             output_spans.append(sentence[span_start:i+1])
     '''
     #output = ' '.join([s.text for s in output_spans])
-    output = ' '.join([output_texts])
+    output = ' '.join(output_texts)
     return output
 
 def remove_redundant_sents(content_objs):
