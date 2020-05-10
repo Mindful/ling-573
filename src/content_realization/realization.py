@@ -1,4 +1,5 @@
-from content_realization.sentence_similarity import is_redundant
+#from content_realization.sentence_similarity import is_redundant
+from sentence_similarity import is_redundant
 import configparser
 import os.path
 
@@ -113,6 +114,41 @@ def remove_appositives(sentence):
             indices_to_remove.add(sentence[i].idx)
             for c in sentence[i].children:
                 indices_to_remove.add(c.idx)
+
+    spans_to_remove = [] #list of tuples (start, end) of spans to remove
+    for i in range(indices_to_remove):
+        #Find start index
+        j = i
+        found_boundary = False
+        while not found_boundary:
+            j = j-1
+            if sentence.doc[j].is_punctuation():
+                continue
+            else:
+                j = j+1
+                found_boundary = True
+        start_index = j
+        #Find end index
+        k = i
+        found_boundary = False
+        while not found_boundary:
+            k = k+1
+            if sentence.doc[j].is_punctuation():
+                continue
+            else:
+                k = k-1
+                found_boundary = True
+        end_index = k
+        spans_to_remove.append((start_index,end_index))
+    start_index = sentence[0].i
+    output_texts = []
+    for (a,b) in spans_to_remove:
+        new_output = sentence.doc[start_index:a]
+        new_output = new_output.text
+        output_texts.append(new_output)
+        start_index = b
+
+    '''
     span_start = 0
     for i in range(0,len(sentence)):
         tok = sentence[i]
@@ -128,8 +164,9 @@ def remove_appositives(sentence):
             span_start = i+1
         elif i == len(sentence)-1:
             output_spans.append(sentence[span_start:i+1])
-
-    output = ' '.join([s.text for s in output_spans])
+    '''
+    #output = ' '.join([s.text for s in output_spans])
+    output = ' '.join([output_texts])
     return output
 
 def remove_redundant_sents(content_objs):
