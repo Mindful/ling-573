@@ -1,5 +1,4 @@
-#from content_realization.sentence_similarity import is_redundant
-from sentence_similarity import is_redundant
+from content_realization.sentence_similarity import is_redundant
 import configparser
 import os.path
 import re
