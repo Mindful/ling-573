@@ -7,9 +7,6 @@ import metric_computation
 from common import PipelineComponent, Globals
 from spacy.tokens import Token
 
-
-
-
 class Content:
     def __init__(self, content, score, article):
         self.span = content
@@ -19,7 +16,6 @@ class Content:
 
     def __repr__(self):
         return str(self.__dict__)
-
 
 class Selection(PipelineComponent):
 
@@ -84,6 +80,7 @@ class Selection(PipelineComponent):
                                 key=lambda x: x[0])  # get the sentence indicies in chronological order
             for tupl in selections:
                 sentence = sentences[tupl[0]]
+                METRICS.re_weight2(sentence)
                 score = tupl[1]
                 if len(sentence) > 4:
                     content.append(Content(sentence,score,article))

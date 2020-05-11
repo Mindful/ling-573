@@ -20,7 +20,8 @@ Selection:
     bias: ir_bias
 
   ngram:
-    num_sents: 2
+    reweight_scheme: 'sumbasic'
+    num_sents: 1
     lambda1: 0.4
     lambda2: 0.7
     lambda3: 0.0

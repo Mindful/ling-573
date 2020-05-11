@@ -8,7 +8,9 @@ class NgramMetrics:
         self.unigrams, self.unigram_size, self.bigrams, self.bigram_size, self.trigrams,self.trigram_size = self.get_grams()
 
     def re_weight(self,data,distribution):
-        if distribution == 1:
+        if self.config['reweight_scheme'] != 'before_selection':
+            return False
+        elif distribution == 1:
             for unigram in data:
                 self.unigrams[unigram] = self.unigrams[unigram] - 1/self.unigram_size
                 self.unigram_size -= 1
@@ -20,6 +22,16 @@ class NgramMetrics:
             for trigram in data:
                 self.trigrams[trigram] = self.trigrams[trigram] - 1/self.trigram_size
         return True
+
+    def re_weight2(self,sentence):
+        if self.config['reweight_scheme'] != 'sumbasic':
+            return False
+        sent = self.sent2words(sentence)
+        for unigram in sent:
+            self.unigrams[unigram] = self.unigrams[unigram] * self.unigrams[unigram]
+        # re-weighting for bigrams hurts scores
+
+        return None
 
     def accept_token(self,token):
         tok_str = str(token).lower()
