@@ -2,8 +2,10 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import re
 import torch
 from common import PipelineComponent
+from common import ROOT_DIR
 from os.path import join
 import datetime
+
 
 class Realization(PipelineComponent):
 
@@ -17,10 +19,10 @@ class Realization(PipelineComponent):
             Realization.model = AutoModelForSequenceClassification.from_pretrained("bert-base-cased-finetuned-mrpc")
         if Realization.config['log_realization_changes'] == True:
             if Realization.config['overwrite_realization_log'] == True:
-                with open(join("content_realization",Realization.config['realization_log_file']), 'w') as fo:
+                with open(join(ROOT_DIR,Realization.config['realization_log_file']), 'w') as fo:
                     fo.write("")
             else:
-                with open(join("content_realization",Realization.config['realization_log_file']), 'a') as fo:
+                with open(join(ROOT_DIR,Realization.config['realization_log_file']), 'a') as fo:
                     fo.write("##############################################"
                              "\nNew Script Run at "+str(datetime.datetime.now())+
                              "\n##############################################\n")
@@ -31,7 +33,7 @@ class Realization(PipelineComponent):
         self.doc_group = selection_object.doc_group
         self.realized_content = self.narrow_content(selection_object)
         if Realization.config['log_realization_changes'] == True:
-            self.write_realization_log(join("content_realization",Realization.config['realization_log_file']) )
+            self.write_realization_log(join(ROOT_DIR,Realization.config['realization_log_file']) )
 
     def write_realization_log(self,log_filepath):
             with open(log_filepath,'a') as fo:
