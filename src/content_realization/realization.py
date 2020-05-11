@@ -1,8 +1,7 @@
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import re
 import torch
-from common import PipelineComponent
-from common import ROOT_DIR
+from common import PipelineComponent, ROOT_DIR
 from os.path import join
 import datetime
 
@@ -11,21 +10,11 @@ class Realization(PipelineComponent):
 
     word_quota = 100
 
-
     @staticmethod
     def setup():
         if Realization.config['similarity_metric'] == 'bert':
             Realization.tokenizer = AutoTokenizer.from_pretrained("bert-base-cased-finetuned-mrpc")
             Realization.model = AutoModelForSequenceClassification.from_pretrained("bert-base-cased-finetuned-mrpc")
-        if Realization.config['log_realization_changes'] == True:
-            if Realization.config['overwrite_realization_log'] == True:
-                with open(join(ROOT_DIR,Realization.config['realization_log_file']), 'w') as fo:
-                    fo.write("")
-            else:
-                with open(join(ROOT_DIR,Realization.config['realization_log_file']), 'a') as fo:
-                    fo.write("##############################################"
-                             "\nNew Script Run at "+str(datetime.datetime.now())+
-                             "\n##############################################\n")
 
 
     def __init__(self, selection_object):
@@ -33,14 +22,13 @@ class Realization(PipelineComponent):
         self.doc_group = selection_object.doc_group
         self.realized_content = self.narrow_content(selection_object)
         if Realization.config['log_realization_changes'] == True:
-            self.write_realization_log(join(ROOT_DIR,Realization.config['realization_log_file']) )
+            self.log_realization_changes()
 
-    def write_realization_log(self,log_filepath):
-            with open(log_filepath,'a') as fo:
-                for content_object in self.realized_content:
-                    fo.write("Article ID: "+str(content_object.article.id)+"\n")
-                    fo.write("\tInput Text: "+str(content_object.span.text)+"\n")
-                    fo.write("\tOutput Tex: "+str(content_object.realized_text)+"\n")
+    def log_realization_changes(self):
+            for content_object in self.realized_content:
+                Realization.logger.info("Article ID: "+str(content_object.article.id))
+                Realization.logger.info("\tInput Text: "+str(content_object.span.text))
+                Realization.logger.info("\tOutput Tex: "+str(content_object.realized_text))
 
 
     def narrow_content(self,selection_object):
