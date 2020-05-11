@@ -37,8 +37,10 @@ class Realization(PipelineComponent):
         :param selection_object: internal selection object from content_selection module
         :return: selection object with unwanted content removed
         '''
-        original_sents = remove_redundant_sents(selection_object.selected_content)
-        sorted_sents = sorted(original_sents, key=lambda x: x.score, reverse=True)
+        unique_sents = remove_redundant_sents(selection_object.selected_content)
+        if Realization.config['remove_quotes'] == True:
+            unique_sents = remove_quotes(unique_sents)
+        sorted_sents = sorted(unique_sents, key=lambda x: x.score, reverse=True)
         removed = []
         total_words = 0
         for i, content in enumerate(sorted_sents):
@@ -51,6 +53,14 @@ class Realization(PipelineComponent):
             else:
                 removed.append(content)
         return [content for content in sorted_sents if content not in removed]
+
+def remove_quotes(content_objs):
+    removed = []
+    for i, content_obj in enumerate(content_objs):
+        if content_obj.span._.contains_quote:
+            removed.append(content_obj)
+    return [content for content in content_objs if content not in removed]
+
 
 
 def trim(sentence):
@@ -178,7 +188,6 @@ def remove_appositives(sentence):
             else:
                 k = k-1
                 break
-                #found_boundary = True
         end_index = k
         spans_to_remove.append((start_index,end_index))
     start_index = sentence[0].i
