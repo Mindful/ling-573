@@ -26,3 +26,6 @@ Ordering:
 Realization:
   similarity_metric: 'spacy'
   similarity_threshold: 0.97
+  log_realization_changes: True
+  realization_log_file: realization.log
+  overwrite_realization_log: True
