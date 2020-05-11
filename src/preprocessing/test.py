@@ -31,7 +31,7 @@ class TestPreprocessing(unittest.TestCase):
         document_group = DocumentGroup(self.topic)
         
         self.assertEqual(document_group.topic_id, self.topic.id)
-        self.assertEqual(document_group.title, self.topic.title)
+        self.assertEqual(document_group.title, self.topic.title) #TODO: this is a span now, test will probabl gag on this line
         self.assertEqual(type(document_group.narrative), Span)
         self.assertEqual(document_group.narrative.text, self.topic.narrative)
         self.assertEqual(len(document_group.articles), 3)

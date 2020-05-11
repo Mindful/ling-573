@@ -4,6 +4,9 @@ from content_selection.ngrammetrics import NgramMetrics
 import spacy,re
 from content_selection.lexrank import LexRank
 import metric_computation
+from common import PipelineComponent, Globals
+from spacy.tokens import Token
+
 
 
 
@@ -18,9 +21,18 @@ class Content:
         return str(self.__dict__)
 
 
-class Selection:
+class Selection(PipelineComponent):
 
     selection_method = None
+
+    @staticmethod
+    def setup():
+        Selection.selection_method = getattr(Selection, Selection.config['method'])
+        if Globals.config['lemmatized_idf']:
+            Token.set_extension('text', getter=lambda token: token.lemma_)
+        else:
+            Token.set_extension('text', getter=lambda token: token.lower_)
+
 
     def __init__(self, document_group_object, max_sentences=20):
         self.doc_group = document_group_object
@@ -88,7 +100,7 @@ class Selection:
         return content
 
     def select_lexrank(self):
-        lexrank_results, sentence_indices_by_article = LexRank(self.doc_group, threshold=None).rank()
+        lexrank_results, sentence_indices_by_article = LexRank(self.doc_group, Selection.logger, Selection.config['lexrank']).rank()
         articles_by_id = {article.id: article for article in self.doc_group.articles}
 
         content = []

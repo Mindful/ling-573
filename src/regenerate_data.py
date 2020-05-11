@@ -1,7 +1,8 @@
 import os
 import glob
 import sys
-from data import DATA_DIR, get_dataset_topics, DataManager, configure_local, get_dataset_pickle_location
+from data import DATA_DIR, get_dataset_topics, configure_local, get_dataset_pickle_location
+from common import Globals
 from data.corpora import Aquaint, Aquaint2
 
 '''
@@ -20,12 +21,12 @@ def main():
 
 
     print('Deleting existing data...')
-    files = [get_dataset_pickle_location(dataset) for dataset in DataManager.datasets]
+    files = [get_dataset_pickle_location(dataset) for dataset in Globals.datasets]
     for f in files:
         if os.path.exists(f):
             os.remove(f)
 
-    for dataset in DataManager.datasets:
+    for dataset in Globals.datasets:
         print('Regenerating data for dataset', dataset)
         get_dataset_topics(dataset)
 

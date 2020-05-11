@@ -1,7 +1,6 @@
 from preprocessing.topic_doc_group import DocumentGroup
 import numpy as np
 import spacy
-STOP_WORDS = spacy.lang.en.stop_words.STOP_WORDS
 class NgramMetrics:
     def __init__(self,document_group):
         self.documents = document_group
@@ -23,7 +22,7 @@ class NgramMetrics:
 
     def accept_token(self,token):
         tok_str = str(token).lower()
-        if token.is_punct or tok_str in STOP_WORDS or tok_str == '`':
+        if token.is_punct or tok_str in spacy.lang.en.stop_words.STOP_WORDS or tok_str == '`':
             return False
         return True
 

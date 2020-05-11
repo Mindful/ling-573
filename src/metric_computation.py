@@ -1,4 +1,5 @@
-from data import load_all_articles, configure_local, DataManager, DATA_DIR
+from data import load_all_articles, configure_local, DATA_DIR
+from common import Globals
 import spacy
 import math
 from collections import defaultdict, Counter
@@ -100,7 +101,7 @@ def get_idf(corpus, lemmatized=False):
 
     except FileNotFoundError:
         try:
-            print("Recomputing IDF data, please wait a moment") #TODO: should be logging
+            print("Recomputing IDF data, please wait a moment")
             sparse_vector, _articles, vocabulary = get_words_by_doc(corpus)
             default_value, idf_scores = calculate_idf_score(sparse_vector, vocabulary, True)
             idf_data = {
@@ -139,15 +140,10 @@ def calculate_idf_score(sparse_vector, vocabulary, smooth=False):
     return (default_value, idf_scores)
 
 
-class Metrics:
-    idf = get_idf(DataManager.corpora[0])
-
-
-
 if __name__ == '__main__':
     #configure_local('/home/josh/clms/scrapbox/corpora') #TODO: not hardcode my local dir
     print("Counting words and computing IDF (lemmatized and unlemmatized) for all corpora...")
-    for corpus in DataManager.corpora:
+    for corpus in Globals.corpora:
         compute_word_counts_by_doc(corpus, False)
         compute_word_counts_by_doc(corpus, True)
         get_idf(corpus, False)

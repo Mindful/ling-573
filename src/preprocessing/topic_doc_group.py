@@ -2,7 +2,12 @@ import re
 import spacy
 from spacy.tokens import Doc, Span
 from . import clean_text
-from common import NLP
+from common import PipelineComponent, Globals
+
+ARTICLE_SENTENCE = 'article_sentence'
+ARTICLE_HEADLINE = 'article_headline'
+NARRATIVE = 'narrative'
+TOPIC_TITLE = 'topic_title'
 
 def set_custom_boundaries(doc):
     '''
@@ -19,19 +24,22 @@ def set_custom_boundaries(doc):
             token.is_sent_start = False
     return doc
 
-Span.set_extension('contains_quote', getter=lambda span: "\"" in span.text)
-Span.set_extension('sent_index', default=None)
-Doc.set_extension('paragraph_index', default=None)
-NLP.add_pipe(set_custom_boundaries, before='parser')
 
-
-class DocumentGroup:
+class DocumentGroup(PipelineComponent):
     __slots__ = ['topic_id', 'narrative', 'title', 'articles']
+
+    @staticmethod
+    def setup():
+        Span.set_extension('contains_quote', getter=lambda span: "\"" in span.text)
+        Span.set_extension('sent_index', default=-1)
+        Span.set_extension('type', default=ARTICLE_SENTENCE)
+        Doc.set_extension('paragraph_index', default=None)
+        Globals.nlp.add_pipe(set_custom_boundaries, before='parser')
 
     def __init__(self, topic):
         self.topic_id = topic.id
-        self.narrative = process_span(topic.narrative)
-        self.title = topic.title
+        self.narrative = process_span(topic.narrative, NARRATIVE)
+        self.title = process_span(topic.title, TOPIC_TITLE)
         self.articles = [DocGroupArticle(article) for article in topic.articles]
 
     def __str__(self):
@@ -47,7 +55,7 @@ class DocGroupArticle:
     def __init__(self, article):
         self.id = article.id
         self.date = article.date
-        self.headline = self._process_headline(article.headline)
+        self.headline = process_span(article.headline, ARTICLE_HEADLINE)
         self.type = article.type
         self.paragraphs = self._process_paragraphs(article.paragraphs)
 
@@ -68,7 +76,7 @@ class DocGroupArticle:
         return processed_paragraphs
 
     def _process_doc(self, paragraph, index):
-        doc = NLP(paragraph)
+        doc = Globals.nlp(paragraph)
         doc._.paragraph_index = index
         return doc
 
@@ -79,15 +87,11 @@ class DocGroupArticle:
                 s._.sent_index = index_counter
                 index_counter += 1
 
-    def _process_headline(self, text):
-        headline = process_span(text)
-        if headline:
-            headline._.sent_index = -1
-        return headline
 
-
-
-def process_span(text):
+def process_span(text, span_type):
     if text:
-        return NLP(text)[:]
+        span = Globals.nlp(text)[:]
+        span._.type = span_type
+        return span
+
     return None

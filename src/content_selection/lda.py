@@ -1,7 +1,6 @@
 from preprocessing.topic_doc_group import DocumentGroup
 from sklearn.decomposition import LatentDirichletAllocation as skLDA
 import spacy, numpy as np
-STOP_WORDS = spacy.lang.en.stop_words.STOP_WORDS
 
 class LDA:
     def __init__(self,document_group_object):
@@ -13,7 +12,7 @@ class LDA:
 
     def accept_token(self,token):
         tok_str = str(token).lower()
-        if token.is_punct or tok_str in STOP_WORDS or tok_str == '`':
+        if token.is_punct or tok_str in spacy.lang.en.stop_words.STOP_WORDS or tok_str == '`':
             return False
         return True
 

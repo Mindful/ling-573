@@ -3,28 +3,33 @@ from preprocessing.topic_doc_group import DocumentGroup
 from content_selection.selection import Selection
 from information_ordering.ordering import Ordering
 from content_realization.realization import Realization
-from progress.bar import Bar
-
+from common import *
+from os.path import join
+from shutil import copyfile
 
 def main():
     #topics = get_dataset_topics(TRAIN)
     topics = get_dataset_topics(DEV_TEST)
 
-    Selection.selection_method = Selection.select_ngram
-    #Selection.selection_method = Selection.select_lexrank
-    #Selection.selection_method = Selection.select_simple
+    pipeline_classes = [
+        DocumentGroup,
+        Selection,
+        Realization,
+        Ordering,
+    ]
 
-    bar = Bar('Processing topics...', max=len(topics))
-    for topic in topics:
+    setup(pipeline_classes)
+
+    for index, topic in enumerate(topics):
+        Globals.logger.info('Processing document group {}/{}'.format(index+1, len(topics)))
         doc_group = DocumentGroup(topic)
         selected_content = Selection(doc_group)
         realized_content = Realization(selected_content)
-        ordered_content = Ordering(realized_content, use_BERT=False)
+        ordered_content = Ordering(realized_content)
         output_summary(ordered_content)
-        bar.next()
 
-    print()
-
+    Globals.logger.info("Writing config file for this run to output directory")
+    copyfile(CONFIG_FILE, join(OUTPUT_DIR, CONFIG_FILENAME))
 
 
 

@@ -1,10 +1,10 @@
-import os
 import pickle
 from data.article import ArticleQuery, Article
 from data.corpora import Aquaint, Aquaint2
 from data.topic import Topic, read_topics_file
 from progress.bar import Bar
-from common import *
+from common import ROOT_DIR, Globals
+import os
 import re
 
 
@@ -15,30 +15,18 @@ OUTPUT_FILE_STRING = '-A.M.100.'
 OUTPUT_FILE_REGEX = re.compile(r'.*' + re.escape(OUTPUT_FILE_STRING) + r'.*')
 
 
-DEV_TEST = 'dev_test'
-TRAIN = 'train'
-
-
-class DataManager:
-    corpora = [Aquaint(), Aquaint2()]
-    datasets = {
-        DEV_TEST: '/dropbox/19-20/573/Data/Documents/devtest/GuidedSumm10_test_topics.xml',
-        TRAIN: '/dropbox/19-20/573/Data/Documents/training/2009/UpdateSumm09_test_topics.xml'
-    }
-
-
 def configure_local(directory):
-    for name, location in DataManager.datasets.items():
-        DataManager.datasets[name] = os.path.join(directory, os.path.basename(location))
+    for name, location in Globals.datasets.items():
+        Globals.datasets[name] = os.path.join(directory, os.path.basename(location))
 
-    DataManager.corpora = [Aquaint(directory), Aquaint2(directory)]
+    Globals.corpora = [Aquaint(directory), Aquaint2(directory)]
 
 
 def _compute_queries_by_file(topic_datas):
     queries = [ArticleQuery(article, topic.id) for topic in topic_datas for article in topic.docset]
 
     corpora_by_year = {}
-    for corpus in DataManager.corpora:
+    for corpus in Globals.corpora:
         for year in corpus.year_range:
             corpora_by_year[year] = corpus
 
@@ -118,14 +106,14 @@ def load_sample_articles(corpus, count=20):
 
 
 def get_dataset_pickle_location(dataset):
-    dataset_location = DataManager.datasets[dataset]
+    dataset_location = Globals.datasets[dataset]
     pickle_name = os.path.basename(dataset_location) + '.pickle'
     local_location = os.path.join(DATA_DIR, pickle_name)
     return local_location
 
 
 def get_dataset_topics(dataset):
-    if dataset not in DataManager.datasets:
+    if dataset not in Globals.datasets:
         raise RuntimeError("Unknown dataset, please use one of the dataset constants.")
 
     local_location = get_dataset_pickle_location(dataset)
@@ -135,7 +123,7 @@ def get_dataset_topics(dataset):
             return pickle.load(picklefile)
     except FileNotFoundError:
         try:
-            topic_metadatas = read_topics_file(DataManager.datasets[dataset])
+            topic_metadatas = read_topics_file(Globals.datasets[dataset])
             queries = _compute_queries_by_file(topic_metadatas)
             topics = _fetch_articles_into_topics(queries, topic_metadatas)
             with open(local_location, 'wb') as picklefile:

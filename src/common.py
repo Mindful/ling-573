@@ -2,27 +2,64 @@ import os
 import logging
 import spacy
 
+from data.corpora import Aquaint, Aquaint2
+
+import yaml
+
 SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(SOURCE_DIR)
 
-LOGGER_NAME = 'summarize'
-LOGGING_FILE = LOGGER_NAME + '.log'
+CONFIG_FILENAME = 'config.yaml'
+CONFIG_FILE = os.path.join(ROOT_DIR, CONFIG_FILENAME)
 
-logger = logging.getLogger(LOGGER_NAME)
-logger.setLevel(logging.DEBUG)
-# create file handler which logs even debug messages
-fh = logging.FileHandler(LOGGING_FILE)
-fh.setLevel(logging.DEBUG)
-# create console handler with a higher log level
-ch = logging.StreamHandler()
-ch.setLevel(logging.WARN)
-# create formatter and add it to the handlers
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-fh.setFormatter(formatter)
-ch.setFormatter(formatter)
-# add the handlers to the logger
-logger.addHandler(fh)
-logger.addHandler(ch)
+LOGGING_FILE = 'summarize.log'
+NLP = None
 
-print("Loading spaCy, this may take a moment...")
-NLP = spacy.load("en_core_web_lg")
+DEV_TEST = 'dev_test'
+TRAIN = 'train'
+
+class Globals:
+    corpora = [Aquaint(), Aquaint2()]
+    datasets = {
+        DEV_TEST: '/dropbox/19-20/573/Data/Documents/devtest/GuidedSumm10_test_topics.xml',
+        TRAIN: '/dropbox/19-20/573/Data/Documents/training/2009/UpdateSumm09_test_topics.xml'
+    }
+
+    nlp = None
+    config = None
+    logger = None
+    idf = None
+
+
+class PipelineComponent:
+    logger = None
+
+    @staticmethod
+    def setup():
+        pass
+
+
+def setup(pipeline_classes):
+    logging.basicConfig(format='[%(asctime)s - %(name)s::%(levelname)s] %(message)s', datefmt='%H:%M:%S')
+    base_logger = logging.getLogger()
+    base_logger.setLevel(logging.INFO)
+    logger = logging.getLogger('Global')
+
+    with open(CONFIG_FILE, 'r') as f:
+        config = yaml.load(f, Loader=yaml.FullLoader)
+
+    logger.info("Loading spaCy, this may take a moment...")
+    Globals.nlp = spacy.load("en_core_web_lg")
+    Globals.config = config[Globals.__name__]
+    Globals.logger = logger
+    logger.info('Loading idf data...')
+
+    from metric_computation import get_idf  # common is imported in too many places - avoid circular imports
+    Globals.idf = get_idf(next(c for c in Globals.corpora if c.name == Globals.config['idf_corpus']))
+
+    for clazz in pipeline_classes:
+        class_name = clazz.__name__
+        logger.info('Setting up '+class_name)
+        clazz.logger = logging.getLogger(class_name)
+        clazz.config = config[class_name]
+        clazz.setup()

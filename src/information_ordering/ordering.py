@@ -3,20 +3,29 @@ from operator import itemgetter
 from torch.nn.functional import softmax
 from transformers import BertForNextSentencePrediction, BertTokenizer
 import numpy as np
+from common import PipelineComponent
 
 
-class Ordering:
-    def __init__(self, realization_object, use_BERT=False):
+class Ordering(PipelineComponent):
+
+    @staticmethod
+    def setup():
+        if Ordering.config['use_bert']:
+            Ordering.model = BertForNextSentencePrediction.from_pretrained('bert-base-cased')
+            Ordering.tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+
+    def __init__(self, realization_object):
         self.selected_content = realization_object.selected_content
         self.realized_content = realization_object
         self.doc_group = realization_object.doc_group
-        self.ordered_sents = self.order(realization_object, use_BERT)
+        self.ordered_sents = self.order(realization_object)
 
-    def order(self, realization_object, use_BERT):
+    def order(self, realization_object):
         '''
         Given selected content, return sentences in best order according to expert weights
 
         '''
+        use_BERT = Ordering.config['use_bert']
         all_sentences = realization_object.realized_content.copy()
 
         if use_BERT:
@@ -93,15 +102,13 @@ class Ordering:
 
 
     def _calculate_BERT_succession_probs(self, sentences):
-        model = BertForNextSentencePrediction.from_pretrained('bert-base-cased')
-        tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
         succession_probs = np.zeros(shape=(len(sentences), len(sentences)))
 
         for first, following in itertools.permutations(enumerate(sentences), 2):
             first_tokens = [token.text for token in first[1].span]
             following_tokens = [token.text for token in following[1].span]
-            encoded = tokenizer.encode_plus(first_tokens, text_pair=following_tokens, return_tensors='pt')
-            seq_relationship_logits = model(**encoded)[0]
+            encoded = Ordering.tokenizer.encode_plus(first_tokens, text_pair=following_tokens, return_tensors='pt')
+            seq_relationship_logits = Ordering.model(**encoded)[0]
             probs = softmax(seq_relationship_logits, dim=1)
             succession_probs[first[0]][following[0]] = probs[0].detach().numpy()[0]
             
