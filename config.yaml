@@ -6,7 +6,7 @@ DocumentGroup:
 
 
 Selection:
-  method: 'select_lexrank'
+  method: 'select_ngram'
 
   lexrank:
     threshold: False # can be False for continuous lexrank, otherwise float between 0 and 1 (noninclusive)
@@ -19,6 +19,12 @@ Selection:
     #bias:  ir_bas
     bias: ir_bias
 
+  ngram:
+    num_sents: 2
+    lambda1: 0.4
+    lambda2: 0.7
+    lambda3: 0.0
+    lambda4: 0.0
 
 Ordering:
   use_bert: False

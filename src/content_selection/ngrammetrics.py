@@ -2,8 +2,9 @@ from preprocessing.topic_doc_group import DocumentGroup
 import numpy as np
 import spacy
 class NgramMetrics:
-    def __init__(self,document_group):
+    def __init__(self,document_group,config):
         self.documents = document_group
+        self.config = config
         self.unigrams, self.unigram_size, self.bigrams, self.bigram_size, self.trigrams,self.trigram_size = self.get_grams()
 
     def re_weight(self,data,distribution):
@@ -106,7 +107,11 @@ class NgramMetrics:
         else:
             return 0.0
 
-    def score(self,sentence, headline, lambda1,lambda2,lambda3,lambda4):
+    def score(self,sentence, headline):
+        lambda1 = self.config['lambda1']
+        lambda2 = self.config['lambda2']
+        lambda3 = self.config['lambda3']
+        lambda4 = self.config['lambda4']
         sent = self.sent2words(sentence)
         if headline:
             headline_score = self.get_headline_score(sent, headline,lambda1,lambda2)

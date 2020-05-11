@@ -68,16 +68,16 @@ class Selection(PipelineComponent):
         return tuple(selections)
 
     def select_ngram(self):
-        METRICS = NgramMetrics(self.doc_group)
+        METRICS = NgramMetrics(self.doc_group,Selection.config['ngram'])
         content = []
         for article in self.doc_group.articles:
             headline = article.headline
             sentences = self._get_sentences(article)
-            sentences = [s for s in  sentences if "\"" not in str(s)]
-            NUM_SENTENCES = min(1, len(sentences))
 
-            scores = sorted([(i, METRICS.score(sentences[i], headline, 0.4, 0.7, 0.00, 0.00))
-                         for i in range(len(sentences))], key=lambda x: x[1], reverse=True)
+            NUM_SENTENCES = min(Selection.config['ngram']['num_sents'], len(sentences))
+
+            scores = sorted([(i, METRICS.score(sentences[i], headline))
+                         for i in range(len(sentences)) if "\"" not in str(sentences[i]) and '?' not in str(sentences[i])], key=lambda x: x[1], reverse=True)
 
             selections = sorted([scores[n]
                                 for n in range(NUM_SENTENCES)],
