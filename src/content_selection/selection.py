@@ -73,7 +73,7 @@ class Selection(PipelineComponent):
             NUM_SENTENCES = min(Selection.config['ngram']['num_sents'], len(sentences))
 
             scores = sorted([(i, METRICS.score(sentences[i], headline))
-                         for i in range(len(sentences)) if "\"" not in str(sentences[i]) and '?' not in str(sentences[i])], key=lambda x: x[1], reverse=True)
+                         for i in range(len(sentences))], key=lambda x: x[1], reverse=True)
 
             selections = sorted([scores[n]
                                 for n in range(NUM_SENTENCES)],

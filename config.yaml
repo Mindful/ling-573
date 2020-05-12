@@ -21,7 +21,7 @@ Selection:
 
   ngram:
     reweight_scheme: 'sumbasic'
-    num_sents: 1
+    num_sents: 2
     lambda1: 0.4
     lambda2: 0.7
     lambda3: 0.0
@@ -36,5 +36,5 @@ Realization:
   log_realization_changes: True
   remove_quotes: True
   remove_questions: True
-  remove_full_spans_that_match: [] #add regex patterns (in quotes) separated by commas. any spans containing regex will be filtered out
-  remove_subspans_that_match: [] #add regex patterns (in quotes) separated by commas. Specific regex matches will be removed
+  remove_full_spans_that_match: ["^[;.:]"] #add regex patterns (in quotes) separated by commas. any spans containing regex will be filtered out
+  remove_subspans_that_match: ["\\(.+\\)",", .+ said","\\.\\.\\."] #add regex patterns (in quotes) separated by commas. Specific regex matches will be removed

@@ -1,6 +1,10 @@
 from preprocessing.topic_doc_group import DocumentGroup
 import numpy as np
 import spacy
+
+from common import Globals
+
+
 class NgramMetrics:
     def __init__(self,document_group,config):
         self.documents = document_group
@@ -104,6 +108,10 @@ class NgramMetrics:
         self.re_weight(trigrams,3)
         return np.sum(probas)/len(sentence)
 
+    def mean_idf(self,sentence):
+        idf_arr = np.array([Globals.idf[word] for word in self.sent2words(sentence)])
+        return np.mean(idf_arr)
+
     def get_headline_score(self,sentence,headline,lambda1,lambda2):
         if headline.ents:
             points = []
@@ -130,4 +138,5 @@ class NgramMetrics:
         else:
             headline_score = 0.0
 
-        return lambda1*self.unigram_score(sent,headline) + lambda2*self.bigram_score(sent,headline) +lambda3*self.trigram_score(sent)+ lambda4*headline_score
+        return (lambda1*self.unigram_score(sent,headline) + lambda2*self.bigram_score(sent,headline) \
+               +lambda3*self.trigram_score(sent)+ lambda4*headline_score)
