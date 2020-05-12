@@ -5,6 +5,36 @@ import numpy as np
 from scipy.spatial.distance import cosine as cosine_distance
 from collections import Counter
 from common import Globals
+from math import log
+
+
+
+
+def pgen(generator_sentence, generatee_sentence, cluster_vocab, lmbda):
+    #TODO: a lot of this should be precomputed and stuck on sentences if we're doing this
+    sentence_wordcounts = Counter(token.text for token in countworthy_tokens(generator_sentence))
+
+    word_probs = Counter({ # cluster vocab
+        word: lmbda * count / sum(cluster_vocab.values()) for word, count in cluster_vocab.items()
+    })
+    word_probs.update({  # add sentence vocab
+        word: (1-lmbda) * count / sum(sentence_wordcounts.values()) for word, count in sentence_wordcounts.items()
+    })
+    word_probs = { # convert to logs to avoid underflow when multiplying out
+        word: log(prob) for word, prob in word_probs.items()
+    }
+
+    # add logs to avoid underflow
+
+    generation_prob = sum( # logspace so add to multiply, multiply for exponents
+        word_probs[word] * sentence_wordcounts[word] for word in generatee_sentence
+    )
+
+    #TODO: pnorm is this * 1 / sum(Counter(token.text for token in countworthy_tokens(generatee_sentence).values())
+
+
+
+
 
 
 
@@ -190,17 +220,17 @@ class LexRank:
 
 
     def _local_vocab(self, require_vector=False):
-        local_vocab = set()
+        local_vocab = Counter()
         for article in self.docgroup.articles:
             if article.headline is not None:
                 for token in countworthy_tokens(article.headline):
                     if not require_vector or token.has_vector:
-                        local_vocab.add(token._.text)
+                        local_vocab[token._.text] += 1
 
             for paragraph in article.paragraphs:
                 for token in countworthy_tokens(paragraph):
                     if not require_vector or token.has_vector:
-                        local_vocab.add(token._.text)
+                        local_vocab.[token._.text] +=1
 
         return local_vocab
 
