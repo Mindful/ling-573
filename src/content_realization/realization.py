@@ -28,7 +28,7 @@ class Realization(PipelineComponent):
             for content_object in self.realized_content:
                 Realization.logger.info("Article ID: "+str(content_object.article.id))
                 Realization.logger.info("\tInput Text: "+str(content_object.span.text))
-                Realization.logger.info("\tOutput Tex: "+str(content_object.realized_text))
+                Realization.logger.info("\tOutput Text: "+str(content_object.realized_text))
 
 
     def narrow_content(self,selection_object):
@@ -40,6 +40,10 @@ class Realization(PipelineComponent):
         unique_sents = remove_redundant_sents(selection_object.selected_content)
         if Realization.config['remove_quotes'] == True:
             unique_sents = remove_quotes(unique_sents)
+        if Realization.config['remove_questions'] == True:
+            unique_sents = remove_questions(unique_sents)
+        if len(Realization.config['remove_full_spans_that_match']) > 0:
+            unique_sents = filter_content_by_regex_list(unique_sents,Realization.config['remove_full_spans_that_match'])
         sorted_sents = sorted(unique_sents, key=lambda x: x.score, reverse=True)
         removed = []
         total_words = 0
@@ -52,13 +56,29 @@ class Realization(PipelineComponent):
                 total_words += text_len
             else:
                 removed.append(content)
-        return [content for content in sorted_sents if content not in removed]
+        return_content =  [content for content in sorted_sents if content not in removed]
+        if len(Realization.config['remove_subspans_that_match']) > 0:
+            unique_sents = remove_text_by_regex_list(return_content,Realization.config['remove_subspans_that_match'])
+        return_content = clean_up_objects(return_content)
+        return return_content
+def remove_questions(content_objs):
+    removed = []
+    for i, content_obj in enumerate(content_objs):
+        if re.match(".*\?.*",content_obj.span.text) is not None:
+            removed.append(content_obj)
+            if Realization.config['log_realization_changes'] == True:
+                Realization.logger.info("Removing sentence with question: "+
+                                        content_obj.span.text)
+    return [content for content in content_objs if content not in removed]
 
 def remove_quotes(content_objs):
     removed = []
     for i, content_obj in enumerate(content_objs):
         if content_obj.span._.contains_quote:
             removed.append(content_obj)
+            if Realization.config['log_realization_changes'] == True:
+                Realization.logger.info("Removing sentence with quotation: "+
+                                    content_obj.span.text)
     return [content for content in content_objs if content not in removed]
 
 
@@ -86,8 +106,15 @@ def trim(sentence):
     #####################################################
     sentence = remove_sentence_initial_terms(sentence)
     sentence = remove_appositives(sentence)
-    sentence = clean_up_sentence(sentence)
     return sentence
+
+def clean_up_objects(content_objs):
+    new_content_objs = []
+    for i, content_obj in enumerate(content_objs):
+        new_text = clean_up_sentence(content_obj.realized_text)
+        content_obj.realized_text = new_text
+        new_content_objs.append(content_obj)
+    return new_content_objs
 
 def clean_up_sentence(sentence):
     '''
@@ -106,7 +133,7 @@ def remove_extra_spaces(sentence):
     :return: string
     '''
     ret = re.sub("  +"," ",sentence)
-    ret = re.sub(" +([.?!])$","\g<1>",sentence)
+    ret = re.sub(" +([.?!,])","\g<1>",sentence)
     return ret
 
 
@@ -137,20 +164,25 @@ def remove_sentence_initial_terms(sentence):
     TODO: There are some adverbs that shouldn't be removed, like when.
     '''
     ## Remove sentence-initial adverbs and conjunctions ##
-    pos = sentence[0].pos_
-    pos2 = sentence[0].pos
-    tag = sentence[0].tag
-    tag2 = sentence[0].tag_
-    if pos in ('CCONJ','ADV'):
-        sentence = sentence[1:]
-        # Remove sentence-initial commas that might be there now
-        if sentence[0].text == ',':
+    finished = False
+    while not finished:
+        pos = sentence[0].pos_
+        pos2 = sentence[0].pos
+        tag = sentence[0].tag
+        tag2 = sentence[0].tag_
+        #if pos in ('CCONJ','ADV'):
+        if tag2 in ('CC','RB','RBS','RBR'):
             sentence = sentence[1:]
+            # Remove sentence-initial commas that might be there now
+            if sentence[0].text == ',':
+                sentence = sentence[1:]
+        else:
+            finished=True
     return sentence
 
 def remove_appositives(sentence):
     '''
-    ** Remove appositves from a given sentence **
+    ** Remove appositives from a given sentence **
     :param sentence: a spaCy span
     :return: raw text of the input span with appositives removed
     TODO: figure out how to return a span object with the target removed
@@ -172,7 +204,7 @@ def remove_appositives(sentence):
         found_boundary = False
         while j>0:
             j = j-1
-            if sentence.doc[j].is_punct:
+            if sentence.doc[j].is_punct or sentence.doc[j].tag_ in ('CC','RB'):
                 continue
             else:
                 j = j+1
@@ -220,6 +252,10 @@ def remove_redundant_sents(content_objs):
                             similarity_threshold=similarity_threshold) \
                             and compare_obj not in removed:
                     removed.append(compare_obj)
+                    if Realization.config['log_realization_changes'] == True:
+                        Realization.logger.info("Removing redundant sentence")
+                        Realization.logger.info("Kept sentence: "+content_obj.span.text)
+                        Realization.logger.info("Removed sentence: " + compare_obj.span.text)
     return [content for content in content_objs if content not in removed]
 
 
@@ -324,4 +360,28 @@ def get_max_embedded_similarity(sent_1, sent_2):
             max_similarity = sim
     return max_similarity
 
+def filter_content_by_regex_list(content_objs,regex_list):
+    removed = []
+    for i, content_obj in enumerate(content_objs):
+        for regex in regex_list:
+            if re.match(regex,content_obj.span.text) is not None:
+                removed.append(content_obj)
+                if Realization.config['log_realization_changes'] == True:
+                    Realization.logger.info("Removing sentence with matching regex: "+
+                                            content_obj.span.text)
+                break
+    return [content for content in content_objs if content not in removed]
 
+def remove_text_by_regex_list(content_objs,regex_list):
+    new_content_objs = []
+    for i, content_obj in enumerate(content_objs):
+        for regex in regex_list:
+            if re.search(regex,content_obj.realized_text) is not None:
+                new_text = re.sub(regex,"",content_obj.realized_text)
+                if Realization.config['log_realization_changes'] == True:
+                    Realization.logger.info("Changing text: -- " +
+                                            content_obj.span.text+" -- to "+
+                                            new_text)
+                content_obj.realized_text = new_text
+        new_content_objs.append(content_obj)
+    return new_content_objs

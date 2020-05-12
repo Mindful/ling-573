@@ -33,5 +33,8 @@ Ordering:
 Realization:
   similarity_metric: 'spacy'
   similarity_threshold: 0.97
-  log_realization_changes: False
+  log_realization_changes: True
   remove_quotes: True
+  remove_questions: True
+  remove_full_spans_that_match: [] #add regex patterns (in quotes) separated by commas. any spans containing regex will be filtered out
+  remove_subspans_that_match: [] #add regex patterns (in quotes) separated by commas. Specific regex matches will be removed
