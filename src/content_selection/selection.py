@@ -65,30 +65,61 @@ class Selection(PipelineComponent):
 
     def select_ngram(self):
         METRICS = NgramMetrics(self.doc_group,Selection.config['ngram'])
-        all_sentences = []
-        for article in self.doc_group.articles:
-            all_sentences.extend(self._get_sentences(article))
         content = []
-        for article in self.doc_group.articles:
-            headline = article.headline
-            sentences = self._get_sentences(article)
 
-            NUM_SENTENCES = min(Selection.config['ngram']['num_sents'], len(sentences))
+        if Selection.config['ngram']['grouping'] == 'glob':
+            sentences = []
+            index_to_article = {}
+            prev_i = 0
+            for article in self.doc_group.articles:  # because we taking all the text irrespective of article, we should have a record of which sents came from where
+                sents = self._get_sentences(article)
+                for i in range(prev_i,prev_i+len(sents)):
+                    index_to_article[i] = article
+                prev_i += len(sents)
+                sentences.extend(sents)
+            NUM_SENTENCES = len(sentences),Selection.config['ngram']['num_sents']
 
-            scores = sorted([(i, METRICS.score(sentences[i], headline))
+            for n in range(NUM_SENTENCES):
+                scores = sorted([(i, METRICS.score(sentences[i], headline=False))
+                             for i in range(len(sentences))], key=lambda x: x[1], reverse=True)
+
+                selections = sorted([scores[n]
+                                 for n in range(len(sentences))],
+                                key=lambda x: x[0])  # get the sentence indicies in chronological order
+
+                i = 0
+                selection = None
+                while not selection:
+                    if len(str(sentences[ selections[i][0] ]).split()) > 3:
+                        selection = selections[i]
+                    else:
+                        i+=1
+                sentence = sentences[selection[0]]
+                METRICS.re_weight2(sentence)
+                sentences[selection[0]] = ''
+                content.append(Content(sentence, selection[1], index_to_article[selection[0]]))
+
+        elif Selection.config['ngram']['grouping'] == 'per_article':
+            for article in self.doc_group.articles:
+                headline = article.headline
+                sentences = self._get_sentences(article)
+
+                NUM_SENTENCES = min(Selection.config['ngram']['num_sents'], len(sentences))
+
+                scores = sorted([(i, METRICS.score(sentences[i], headline))
                          for i in range(len(sentences))], key=lambda x: x[1], reverse=True)
 
-            selections = sorted([scores[n]
+                selections = sorted([scores[n]
                                 for n in range(NUM_SENTENCES)],
                                 key=lambda x: x[0])  # get the sentence indicies in chronological order
-            for tupl in selections:
-                sentence = sentences[tupl[0]]
-                METRICS.re_weight2(sentence)
-                score = tupl[1]
-                if len(str(sentence).split()) > 3:
-                    content.append(Content(sentence,score,article))
-                else:
-                    pass
+                for tupl in selections:
+                    sentence = sentences[tupl[0]]
+                    METRICS.re_weight2(sentence)
+                    score = tupl[1]
+                    if len(str(sentence).split()) > 3:
+                        content.append(Content(sentence,score,article))
+                    else:
+                        pass
         return content
 
     def select_simple(self):

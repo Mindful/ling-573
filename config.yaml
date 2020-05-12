@@ -21,7 +21,8 @@ Selection:
 
   ngram:
     reweight_scheme: 'sumbasic'
-    num_sents: 2
+    grouping: 'glob'
+    num_sents: 2 #this will only be used for per_article grouping, glob gives all sentences
     lambda1: 0.4
     lambda2: 0.7
     lambda3: 0.0
