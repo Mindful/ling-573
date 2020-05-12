@@ -94,6 +94,9 @@ class NgramMetrics:
         unigrams = [word for word in sentence]
         probas = np.array([self.unigrams[word]  for word in unigrams])
         self.re_weight(unigrams,1)
+        idfs = np.array([Globals.idf[word]  for word in unigrams])
+        if self.config['use_idf'] == 1:
+            probas = probas*idfs
         return np.sum(probas)/len(sentence)
 
     def bigram_score(self,sentence, headline):
@@ -138,5 +141,5 @@ class NgramMetrics:
         else:
             headline_score = 0.0
 
-        return (lambda1*self.unigram_score(sent,headline) + lambda2*self.bigram_score(sent,headline) \
-               +lambda3*self.trigram_score(sent)+ lambda4*headline_score)
+        return lambda1*self.unigram_score(sent,headline) + lambda2*self.bigram_score(sent,headline)+\
+                             lambda3*self.trigram_score(sent)+ lambda4*headline_score

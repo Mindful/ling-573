@@ -77,34 +77,35 @@ class Selection(PipelineComponent):
                     index_to_article[i] = article
                 prev_i += len(sents)
                 sentences.extend(sents)
-            NUM_SENTENCES = len(sentences),Selection.config['ngram']['num_sents']
-
+            NUM_SENTENCES = min(len(sentences),Selection.config['ngram']['num_sents_per_glob'])
+            remaining = [i for i in range(len(sentences))] #remaining sentences left for selection
             for n in range(NUM_SENTENCES):
-                scores = sorted([(i, METRICS.score(sentences[i], headline=False))
-                             for i in range(len(sentences))], key=lambda x: x[1], reverse=True)
 
-                selections = sorted([scores[n]
-                                 for n in range(len(sentences))],
-                                key=lambda x: x[0])  # get the sentence indicies in chronological order
+                scores = sorted([(i, METRICS.score(sentences[i], headline=False)) for i in remaining], key=lambda x: x[1], reverse=True)
 
-                i = 0
+                selections = sorted([scores[i]
+                                 for i in range(len(scores))],
+                                key=lambda x: x[0],reverse=True)  # get the sentence indicies in chronological order
+
                 selection = None
+                i = 0
                 while not selection:
-                    if len(str(sentences[ selections[i][0] ]).split()) > 3:
-                        selection = selections[i]
+                    if len(str(sentences[scores[i][0]]).split()) > 4:
+                        selection = scores[i]
                     else:
                         i+=1
+
                 sentence = sentences[selection[0]]
                 METRICS.re_weight2(sentence)
-                sentences[selection[0]] = ''
                 content.append(Content(sentence, selection[1], index_to_article[selection[0]]))
+                remaining.remove(selection[0])
 
         elif Selection.config['ngram']['grouping'] == 'per_article':
             for article in self.doc_group.articles:
                 headline = article.headline
                 sentences = self._get_sentences(article)
 
-                NUM_SENTENCES = min(Selection.config['ngram']['num_sents'], len(sentences))
+                NUM_SENTENCES = min(Selection.config['ngram']['num_sents_per_article'], len(sentences))
 
                 scores = sorted([(i, METRICS.score(sentences[i], headline))
                          for i in range(len(sentences))], key=lambda x: x[1], reverse=True)
