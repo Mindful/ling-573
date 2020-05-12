@@ -65,6 +65,9 @@ class Selection(PipelineComponent):
 
     def select_ngram(self):
         METRICS = NgramMetrics(self.doc_group,Selection.config['ngram'])
+        all_sentences = []
+        for article in self.doc_group.articles:
+            all_sentences.extend(self._get_sentences(article))
         content = []
         for article in self.doc_group.articles:
             headline = article.headline
@@ -82,7 +85,7 @@ class Selection(PipelineComponent):
                 sentence = sentences[tupl[0]]
                 METRICS.re_weight2(sentence)
                 score = tupl[1]
-                if len(sentence) > 4:
+                if len(str(sentence).split()) > 3:
                     content.append(Content(sentence,score,article))
                 else:
                     pass
