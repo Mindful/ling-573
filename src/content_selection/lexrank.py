@@ -230,7 +230,7 @@ class LexRank:
             for paragraph in article.paragraphs:
                 for token in countworthy_tokens(paragraph):
                     if not require_vector or token.has_vector:
-                        local_vocab.[token._.text] +=1
+                        local_vocab[token._.text] +=1
 
         return local_vocab
 
