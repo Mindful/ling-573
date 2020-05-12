@@ -37,4 +37,4 @@ Realization:
   remove_quotes: True
   remove_questions: True
   remove_full_spans_that_match: ["^[;.:]"] #add regex patterns (in quotes) separated by commas. any spans containing regex will be filtered out
-  remove_subspans_that_match: ["\\(.+\\)",", .+ said","\\.\\.\\."] #add regex patterns (in quotes) separated by commas. Specific regex matches will be removed
+  remove_subspans_that_match: ["\\(.+\\)",",[^,] said","\\.\\.\\."] #add regex patterns (in quotes) separated by commas. Specific regex matches will be removed
