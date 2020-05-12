@@ -44,23 +44,23 @@ class Realization(PipelineComponent):
             unique_sents = remove_questions(unique_sents)
         if len(Realization.config['remove_full_spans_that_match']) > 0:
             unique_sents = filter_content_by_regex_list(unique_sents,Realization.config['remove_full_spans_that_match'])
+        unique_sents = trim_content_objs(unique_sents)
+        if len(Realization.config['remove_subspans_that_match']) > 0:
+            unique_sents = remove_text_by_regex_list(unique_sents,Realization.config['remove_subspans_that_match'])
         sorted_sents = sorted(unique_sents, key=lambda x: x.score, reverse=True)
         removed = []
         total_words = 0
         for i, content in enumerate(sorted_sents):
             remaining_words = self.word_quota - total_words
-            trimmed_sentence = trim(content.span)
-            text_len = len(trimmed_sentence.split())
+            text_len = len(content.realized_text.split())
             if text_len <= remaining_words:
-                content.realized_text = trimmed_sentence
                 total_words += text_len
             else:
                 removed.append(content)
-        return_content =  [content for content in sorted_sents if content not in removed]
-        if len(Realization.config['remove_subspans_that_match']) > 0:
-            unique_sents = remove_text_by_regex_list(return_content,Realization.config['remove_subspans_that_match'])
+        return_content = [content for content in sorted_sents if content not in removed]
         return_content = clean_up_objects(return_content)
         return return_content
+
 def remove_questions(content_objs):
     removed = []
     for i, content_obj in enumerate(content_objs):
@@ -81,6 +81,13 @@ def remove_quotes(content_objs):
                                     content_obj.span.text)
     return [content for content in content_objs if content not in removed]
 
+def trim_content_objs(content_objs):
+    new_content_objs = []
+    for i, content_obj in enumerate(content_objs):
+        new_text = trim(content_obj.span)
+        content_obj.realized_text = new_text
+        new_content_objs.append(content_obj)
+    return new_content_objs
 
 
 def trim(sentence):
