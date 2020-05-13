@@ -5,40 +5,6 @@ import numpy as np
 from scipy.spatial.distance import cosine as cosine_distance
 from collections import Counter
 from common import Globals
-from math import log
-
-
-
-
-def pgen(generator_sentence, generatee_sentence, cluster_vocab, lmbda):
-    #TODO: a lot of this should be precomputed and stuck on sentences if we're doing this
-    sentence_wordcounts = Counter(token.text for token in countworthy_tokens(generator_sentence))
-
-    word_probs = Counter({ # cluster vocab
-        word: lmbda * count / sum(cluster_vocab.values()) for word, count in cluster_vocab.items()
-    })
-    word_probs.update({  # add sentence vocab
-        word: (1-lmbda) * count / sum(sentence_wordcounts.values()) for word, count in sentence_wordcounts.items()
-    })
-    word_probs = { # convert to logs to avoid underflow when multiplying out
-        word: log(prob) for word, prob in word_probs.items()
-    }
-
-    # add logs to avoid underflow
-
-    generation_prob = sum( # logspace so add to multiply, multiply for exponents
-        word_probs[word] * sentence_wordcounts[word] for word in generatee_sentence
-    )
-
-    #TODO: pnorm is this * 1 / sum(Counter(token.text for token in countworthy_tokens(generatee_sentence).values())
-
-
-
-
-
-
-
-
 
 def ir_bias(query_sentence):
     query_word_counts = Counter(token._.text for token in query_sentence)
@@ -163,6 +129,9 @@ def power_method(matrix):
             eigenvector = next_eigenvector
 
 
+def query_sentence(docgroup):
+    return docgroup.narrative if docgroup.narrative else docgroup.title
+
 
 class LexRank:
     def __init__(self, docgroup, logger, config):
@@ -207,7 +176,7 @@ class LexRank:
 
         bias = self.config['bias']
         if bias:
-            bias_vector = compute_bias_vector(all_sentences, bias_function=globals()[bias](self.docgroup.title))
+            bias_vector = compute_bias_vector(all_sentences, bias_function=globals()[bias](query_sentence(self.docgroup)))
             transition_matrix = bias_and_dampen_transition_matrix(self.config['damping'], bias_vector, transition_matrix)
         else:
             transition_matrix = dampen_transition_matrix(self.config['damping'], transition_matrix)
