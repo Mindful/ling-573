@@ -1,6 +1,6 @@
 Globals:
   idf_corpus: 'AQUAINT' #AQUAINT or AQUAINT-2
-  lemmatized_idf: True
+  lemmatized_idf: False
 
 DocumentGroup:
 
