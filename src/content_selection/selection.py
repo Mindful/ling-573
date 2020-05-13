@@ -116,12 +116,13 @@ class Selection(PipelineComponent):
                                 key=lambda x: x[0])  # get the sentence indicies in chronological order
                 for tupl in selections:
                     sentence = sentences[tupl[0]]
-                    METRICS.re_weight2(sentence)
                     score = tupl[1]
-                    if len(str(sentence).split()) > 3:
+                    METRICS.re_weight2(sentence)
+                    if len(str(sentence).split()) > Selection.config['ngram']['length_limit']:
                         content.append(Content(sentence,score,article))
                     else:
                         pass
+
         return content
 
     def select_simple(self):
