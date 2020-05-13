@@ -21,10 +21,10 @@ Selection:
 
   ngram:
     reweight_scheme: 'sumbasic'
-    grouping: 'glob'
+    grouping: 'per_article'
     use_idf: 0
     num_sents_per_article: 2
-    num_sents_per_glob: 20
+    num_sents_per_glob: 50
     lambda1: 0.4
     lambda2: 0.7
     lambda3: 0.0

@@ -9,6 +9,7 @@ class NgramMetrics:
     def __init__(self,document_group,config):
         self.documents = document_group
         self.config = config
+        self.idf = Globals.idf.copy()
         self.unigrams, self.unigram_size, self.bigrams, self.bigram_size, self.trigrams,self.trigram_size = self.get_grams()
 
     def re_weight(self,data,distribution):
@@ -94,7 +95,7 @@ class NgramMetrics:
         unigrams = [word for word in sentence]
         probas = np.array([self.unigrams[word]  for word in unigrams])
         self.re_weight(unigrams,1)
-        idfs = np.array([Globals.idf[word]  for word in unigrams])
+        idfs = np.array([self.idf[word]  for word in unigrams])
         if self.config['use_idf'] == 1:
             probas = probas*idfs
         return np.sum(probas)/len(sentence)
