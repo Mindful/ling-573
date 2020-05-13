@@ -6,7 +6,7 @@ DocumentGroup:
 
 
 Selection:
-  method: select_lexrank
+  method: select_ngram
 
   lexrank:
     threshold: False # can be False for continuous lexrank, otherwise float between 0 and 1 (noninclusive)
@@ -21,7 +21,7 @@ Selection:
 
   ngram:
     reweight_scheme: 'sumbasic'
-    grouping: 'per_article'
+    grouping: 'glob'
     use_idf: 0
     num_sents_per_article: 2
     num_sents_per_glob: 50

@@ -6,7 +6,7 @@ from common import Globals
 
 
 class NgramMetrics:
-    def __init__(self,document_group,config):
+    def __init__(self,document_group,config,idf_data):
         self.documents = document_group
         self.config = config
         self.idf = Globals.idf.copy()

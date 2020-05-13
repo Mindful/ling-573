@@ -68,7 +68,6 @@ class Selection(PipelineComponent):
     def select_ngram(self):
         METRICS = NgramMetrics(self.doc_group,Selection.config['ngram'])
         content = []
-
         if Selection.config['ngram']['grouping'] == 'glob':
             sentences = []
             index_to_article = {}
@@ -79,7 +78,7 @@ class Selection(PipelineComponent):
                     index_to_article[i] = article
                 prev_i += len(sents)
                 sentences.extend(sents)
-            NUM_SENTENCES = min(len(sentences),Selection.config['ngram']['num_sents_per_glob'])
+            NUM_SENTENCES = len(sentences)
             remaining = [i for i in range(len(sentences))] #remaining sentences left for selection
             for n in range(NUM_SENTENCES):
 
