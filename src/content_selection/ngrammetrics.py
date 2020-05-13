@@ -95,7 +95,8 @@ class NgramMetrics:
         unigrams = [word for word in sentence]
         probas = np.array([self.unigrams[word]  for word in unigrams])
         self.re_weight(unigrams,1)
-        idfs = np.array([self.idf[word]  for word in unigrams])
+        #idfs = np.array([self.idf[word]  for word in unigrams])
+        idfs = 1
         if self.config['use_idf'] == 1:
             probas = probas*idfs
         return np.sum(probas)/len(sentence)
