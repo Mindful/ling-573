@@ -1,8 +1,18 @@
 from preprocessing.topic_doc_group import DocumentGroup
 import numpy as np
 import spacy
+from content_selection.lexrank import compute_bias_vector, ir_bias, idf_weighted_vector_bias, query_sentence
 
 from common import Globals
+#
+# #docgroup is just docgroup
+# ir_bias_function = ir_bias(query_sentence(docgroup))
+# idf_weighted_vector_bias_function = idf_weighted_vector_bias(query_sentence(docgrop))
+# # all_sentences is a list of spans
+# bias_vector = compute_bias_vector(all_sentences, ir_bias_function)
+# # OR
+# bias_vector = compute_bias_vector(all_sentences, idf_weighted_vector_bias_function)
+
 
 
 class NgramMetrics:
