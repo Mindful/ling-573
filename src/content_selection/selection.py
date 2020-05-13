@@ -6,7 +6,7 @@ from content_selection.lexrank import LexRank
 import metric_computation
 from common import PipelineComponent, Globals
 from spacy.tokens import Token
-
+import numpy as np
 class Content:
     def __init__(self, content, score, article):
         self.span = content
@@ -79,31 +79,51 @@ class Selection(PipelineComponent):
                 prev_i += len(sents)
                 sentences.extend(sents)
             NUM_SENTENCES = min(Selection.config['ngram']['num_sents_per_glob'],len(sentences))
+            BIASES = METRICS.get_bias(sentences) * Selection.config['ngram']['lambda5']
             remaining = [i for i in range(len(sentences))] #remaining sentences left for selection
+            score_record = []
+            index_record  = []
             for n in range(NUM_SENTENCES):
+                remaining_sents = [ sentences[i] for i in remaining]
 
-                scores = sorted([(i, METRICS.score(sentences[i], index_to_article[i].headline))
-                                 for i in remaining], key=lambda x: x[1], reverse=True)
+                """
+                biases = np.array([BIASES[i] for i in remaining]) * Selection.config['ngram']['lambda5']
+                ngram_scores = (1 - Selection.config['ngram']['lambda5']) * METRICS.score(remaining_sents, headline=None)
+                final_scores = ngram_scores + biases
+                """
+                ngram_scores = (1 - Selection.config['ngram']['lambda5']) * METRICS.score(remaining_sents, headline=None)
+                final_scores = ngram_scores
+                scores = sorted([(ele, final_scores[i])
+                                 for i,ele in enumerate(remaining)], key=lambda x: x[1], reverse=True)
 
                 selection = scores[0]
                 sentence = sentences[selection[0]]
                 METRICS.re_weight2(sentence)
                 content.append(Content(sentence, selection[1], index_to_article[selection[0]]))
+                score_record.append(selection[1])
                 remaining.remove(selection[0])
+                index_record.append(selection[0])
+
+            score_record = np.array(score_record)
+            score_record = score_record/score_record.sum()
+            content = [Content(c.span,score_record[i]*BIASES[index_record[i]],c.article) for i,c in enumerate(content)]
 
         elif Selection.config['ngram']['grouping'] == 'per_article':
             for article in self.doc_group.articles:
                 headline = article.headline
                 sentences = self._get_sentences(article)
-
                 NUM_SENTENCES = min(Selection.config['ngram']['num_sents_per_article'], len(sentences))
 
-                scores = sorted([(i, METRICS.score(sentences[i], headline))
-                         for i in range(len(sentences))], key=lambda x: x[1], reverse=True)
+                biases = METRICS.get_bias(sentences)*Selection.config['ngram']['lambda5']
+                ngram_scores = (1-Selection.config['ngram']['lambda5'])*METRICS.score(sentences,headline)
+                final_scores = ngram_scores + biases
+
+                scores = sorted([(i,final_scores[i])  for i in range(len(sentences))],key=lambda x: x[1], reverse=True)
 
                 selections = sorted([scores[n]
                                 for n in range(NUM_SENTENCES)],
                                 key=lambda x: x[0])  # get the sentence indicies in chronological order
+
                 for tupl in selections:
                     sentence = sentences[tupl[0]]
                     score = tupl[1]

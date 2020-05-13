@@ -19,6 +19,7 @@ class NgramMetrics:
     def __init__(self,document_group,config):
         self.documents = document_group
         self.config = config
+        self.bias_function = ir_bias(query_sentence(document_group))
         #self.idf = Globals.idf.copy()
         self.unigrams, self.unigram_size, self.bigrams, self.bigram_size, self.trigrams,self.trigram_size = self.get_grams()
 
@@ -68,6 +69,9 @@ class NgramMetrics:
         sentences = [self.sent2words(sentence)  for paragraph in document.paragraphs for sentence in paragraph.sents]
         sentences.append([str(document.headline).lower().split()])
         return sentences, self.get_entities(document)
+
+    def get_bias(self,spans):
+        return compute_bias_vector(spans, self.bias_function)
 
     def get_grams(self):
         unigrams = {}
@@ -142,16 +146,18 @@ class NgramMetrics:
         else:
             return 0.0
 
-    def score(self,sentence, headline):
-        lambda1 = self.config['lambda1']
-        lambda2 = self.config['lambda2']
-        lambda3 = self.config['lambda3']
-        lambda4 = self.config['lambda4']
-        sent = self.sent2words(sentence)
-        if headline:
-            headline_score = self.get_headline_score(sent, headline,lambda1,lambda2)
-        else:
-            headline_score = 0.0
-
-        return lambda1*self.unigram_score(sent,headline) + lambda2*self.bigram_score(sent,headline)+\
-                             lambda3*self.trigram_score(sent)+ lambda4*headline_score
+    def score(self,sentences, headline):
+        scores = []
+        for sentence in sentences:
+            lambda1 = self.config['lambda1']
+            lambda2 = self.config['lambda2']
+            lambda3 = self.config['lambda3']
+            lambda4 = self.config['lambda4']
+            sent = self.sent2words(sentence)
+            if headline:
+                headline_score = self.get_headline_score(sent, headline,lambda1,lambda2)
+            else:
+                headline_score = 0.0
+            scores.append(lambda1*self.unigram_score(sent,headline) + lambda2*self.bigram_score(sent,headline)+lambda3*self.trigram_score(sent)+ lambda4*headline_score)
+        scores = np.array(scores)
+        return scores

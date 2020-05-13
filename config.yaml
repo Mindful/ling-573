@@ -21,7 +21,7 @@ Selection:
 
   ngram:
     reweight_scheme: 'sumbasic'
-    grouping: 'per_article'
+    grouping: 'glob'
     use_idf: 0
     num_sents_per_article: 2
     length_limit: 4
@@ -30,6 +30,7 @@ Selection:
     lambda2: 0.9
     lambda3: 0.0
     lambda4: 0.0
+    lambda5: 0.2 # bias
 
 Ordering:
   use_bert: False
