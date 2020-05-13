@@ -78,7 +78,7 @@ class Selection(PipelineComponent):
                     index_to_article[i] = article
                 prev_i += len(sents)
                 sentences.extend(sents)
-            NUM_SENTENCES = len(sentences)
+            NUM_SENTENCES = min(Selection.config['ngram']['num_sents_per_glob'],len(sentences))
             remaining = [i for i in range(len(sentences))] #remaining sentences left for selection
             for n in range(NUM_SENTENCES):
 
