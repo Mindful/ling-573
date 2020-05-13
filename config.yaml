@@ -23,7 +23,7 @@ Selection:
     reweight_scheme: 'sumbasic'
     grouping: 'per_article'
     use_idf: 0
-    num_sents_per_article: 1
+    num_sents_per_article: 2
     length_limit: 4
     num_sents_per_glob: 100
     lambda1: 0.2
@@ -40,5 +40,6 @@ Realization:
   log_realization_changes: False
   remove_quotes: True
   remove_questions: True
+  minimum_sentence_length: 4 # this is # of tokens that a sentence requires AFTER being subjected to regex, etc
   remove_full_spans_that_match: [] #add regex patterns (in quotes) separated by commas. any spans containing regex will be filtered out
   remove_subspans_that_match: [] #add regex patterns (in quotes) separated by commas. Specific regex matches will be removed
