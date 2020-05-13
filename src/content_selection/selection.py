@@ -106,7 +106,7 @@ class Selection(PipelineComponent):
 
             score_record = np.array(score_record)
             score_record = score_record/score_record.sum()
-            content = [Content(c.span,score_record[i]*BIASES[index_record[i]],c.article) for i,c in enumerate(content)]
+            content = [Content(c.span,score_record[i]+BIASES[index_record[i]],c.article) for i,c in enumerate(content)]
 
         elif Selection.config['ngram']['grouping'] == 'per_article':
             for article in self.doc_group.articles:
