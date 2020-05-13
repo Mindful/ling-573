@@ -53,7 +53,7 @@ class Realization(PipelineComponent):
         for i, content in enumerate(sorted_sents):
             remaining_words = self.word_quota - total_words
             text_len = len(content.realized_text.split())
-            if text_len <= remaining_words:
+            if text_len <= remaining_words and text_len > Realization.config['minimum_sentence_length']:
                 total_words += text_len
             else:
                 removed.append(content)

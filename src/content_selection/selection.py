@@ -82,20 +82,10 @@ class Selection(PipelineComponent):
             remaining = [i for i in range(len(sentences))] #remaining sentences left for selection
             for n in range(NUM_SENTENCES):
 
-                scores = sorted([(i, METRICS.score(sentences[i], index_to_article[i].headline)) for i in remaining], key=lambda x: x[1], reverse=True)
+                scores = sorted([(i, METRICS.score(sentences[i], index_to_article[i].headline))
+                                 for i in remaining], key=lambda x: x[1], reverse=True)
 
-                selections = sorted([scores[i]
-                                 for i in range(len(scores))],
-                                key=lambda x: x[0],reverse=True)  # get the sentence indicies in chronological order
-
-                selection = None
-                i = 0
-                while not selection:
-                    if len(str(sentences[scores[i][0]]).split()) > 4:
-                        selection = scores[i]
-                    else:
-                        i+=1
-
+                selection = scores[0]
                 sentence = sentences[selection[0]]
                 METRICS.re_weight2(sentence)
                 content.append(Content(sentence, selection[1], index_to_article[selection[0]]))
