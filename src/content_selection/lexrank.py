@@ -218,22 +218,27 @@ class LexRank:
 
         return results, sentences_indices_by_article
 
-
     def _local_vocab(self, require_vector=False):
         local_vocab = Counter()
-        for article in self.docgroup.articles:
-            if article.headline is not None:
-                for token in countworthy_tokens(article.headline):
-                    if not require_vector or token.has_vector:
-                        local_vocab[token._.text] += 1
 
+        target_spans = []
+        for article in self.docgroup.articles:
             for paragraph in article.paragraphs:
-                for token in countworthy_tokens(paragraph):
-                    if not require_vector or token.has_vector:
-                        local_vocab[token._.text] +=1
+                for sentence in paragraph.sents:
+                    target_spans.append(sentence)
+
+        target_spans = target_spans + [
+            article.headline for article in self.docgroup.articles
+        ] + [self.docgroup.title, self.docgroup.narrative]
+
+        target_spans = [span for span in target_spans if span is not None]
+
+        for span in target_spans:
+            for token in countworthy_tokens(span):
+                if not require_vector or token.has_vector:
+                    local_vocab[token._.text] += 1
 
         return local_vocab
-
 
 
 

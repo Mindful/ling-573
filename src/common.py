@@ -56,10 +56,6 @@ def setup(pipeline_classes):
 
 
     from metric_computation import get_idf  # common is imported in too many places - avoid circular imports
-
-    a = get_idf(next(c for c in Globals.corpora if c.name == Globals.config['idf_corpus']), False)
-    b = get_idf(next(c for c in Globals.corpora if c.name == Globals.config['idf_corpus']), True)
-
     Globals.idf = get_idf(next(c for c in Globals.corpora if c.name == Globals.config['idf_corpus']),
                           lemmatized=Globals.config['lemmatized_idf'])
 
