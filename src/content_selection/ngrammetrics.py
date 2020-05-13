@@ -9,7 +9,7 @@ class NgramMetrics:
     def __init__(self,document_group,config):
         self.documents = document_group
         self.config = config
-        self.idf = Globals.idf.copy()
+        #self.idf = Globals.idf.copy()
         self.unigrams, self.unigram_size, self.bigrams, self.bigram_size, self.trigrams,self.trigram_size = self.get_grams()
 
     def re_weight(self,data,distribution):
