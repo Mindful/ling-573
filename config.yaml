@@ -6,7 +6,7 @@ DocumentGroup:
 
 
 Selection:
-  method: select_lexrank
+  method: select_ngram
 
   lexrank:
     threshold: False # can be False for continuous lexrank, otherwise float between 0 and 1 (noninclusive)
