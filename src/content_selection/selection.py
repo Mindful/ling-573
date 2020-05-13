@@ -88,14 +88,7 @@ class Selection(PipelineComponent):
                                  for i in range(len(scores))],
                                 key=lambda x: x[0],reverse=True)  # get the sentence indicies in chronological order
 
-                selection = None
-                i = 0
-                while not selection:
-                    if len(str(sentences[scores[i][0]]).split()) > 4:
-                        selection = scores[i]
-                    else:
-                        i+=1
-
+                selection = scores[0]
                 sentence = sentences[selection[0]]
                 METRICS.re_weight2(sentence)
                 content.append(Content(sentence, selection[1], index_to_article[selection[0]]))

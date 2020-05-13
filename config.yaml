@@ -23,9 +23,9 @@ Selection:
     reweight_scheme: 'sumbasic'
     grouping: 'per_article'
     use_idf: 0
-    num_sents_per_article: 2
+    num_sents_per_article: 1
     length_limit: 4
-    num_sents_per_glob: 50
+    num_sents_per_glob: 100
     lambda1: 0.2
     lambda2: 0.9
     lambda3: 0.0
