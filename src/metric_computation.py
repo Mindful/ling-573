@@ -24,10 +24,9 @@ def metric_file_name(metric_name, corpus):
     return os.path.join(DATA_DIR, corpus.name + '_' + metric_name)
 
 
-def compute_word_counts_by_doc(corpus, lemmatized=False):
-
+def compute_word_counts_by_doc(corpus):
     print('Loading spaCy...')
-    tokenizer = spacy.load("en_core_web_lg", disable=['tagger', 'parser', 'ner'])
+    tokenizer = spacy.load("en_core_web_lg", disable=['parser'])
 
     articles = load_all_articles(corpus)
     textblob_by_id = {
@@ -36,20 +35,34 @@ def compute_word_counts_by_doc(corpus, lemmatized=False):
 
     spacy_gen = ((clean_text(text, True), article_id) for article_id, text in textblob_by_id.items())
 
-
     word_counts = defaultdict(Counter)
+    word_counts_lemmatized = defaultdict(Counter)
 
     bar = Bar('Processing articles...', max=len(textblob_by_id))
     for doc, article_id in tokenizer.pipe(spacy_gen, as_tuples=True):
         for token in doc:
             if is_countworthy_token(token):
-                if lemmatized:
-                    word_counts[article_id][token.lemma_] += 1
+                if token.ent_type != 0:
+                    text = token.lower_.title()
+                    word_counts_lemmatized[article_id][text] += 1
+                    word_counts[article_id][text] += 1
                 else:
+                    word_counts_lemmatized[article_id][token.lemma_] += 1
                     word_counts[article_id][token.lower_] += 1
+
         bar.next()
 
     bar.finish()
+
+    print('Saving unlemmatized data')
+    _save_word_counts(word_counts, False)
+    print('Saving lemmatized data')
+    _save_word_counts(word_counts_lemmatized, True)
+
+    print("Done")
+
+
+def _save_word_counts(word_counts, lemmatized):
     print('Vectorizing...')
     vectorizer = DictVectorizer(dtype=np.uint16)
     article_names = list(word_counts.keys())
@@ -66,8 +79,6 @@ def compute_word_counts_by_doc(corpus, lemmatized=False):
     with open(metric_file_name(metric_name+'.vocab', corpus), 'w', newline='') as f:
         wr = csv.writer(f)
         wr.writerow(vocabulary)
-
-    print("Done")
 
 
 def get_words_by_doc(corpus, lemmatized=False):
@@ -102,7 +113,7 @@ def get_idf(corpus, lemmatized=False):
     except FileNotFoundError:
         try:
             print("Recomputing IDF data, please wait a moment")
-            sparse_vector, _articles, vocabulary = get_words_by_doc(corpus)
+            sparse_vector, _articles, vocabulary = get_words_by_doc(corpus, lemmatized)
             default_value, idf_scores = calculate_idf_score(sparse_vector, vocabulary, True)
             idf_data = {
                 'default_value': default_value,
@@ -141,10 +152,9 @@ def calculate_idf_score(sparse_vector, vocabulary, smooth=False):
 
 
 if __name__ == '__main__':
-    #configure_local('/home/josh/clms/scrapbox/corpora') #TODO: not hardcode my local dir
+    #configure_local('/home/josh/clms/scrapbox/corpora')
     print("Counting words and computing IDF (lemmatized and unlemmatized) for all corpora...")
     for corpus in Globals.corpora:
-        compute_word_counts_by_doc(corpus, False)
-        compute_word_counts_by_doc(corpus, True)
+        compute_word_counts_by_doc(corpus)
         get_idf(corpus, False)
         get_idf(corpus, True)

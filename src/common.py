@@ -54,8 +54,14 @@ def setup(pipeline_classes):
     Globals.logger = logger
     logger.info('Loading idf data...')
 
+
     from metric_computation import get_idf  # common is imported in too many places - avoid circular imports
-    Globals.idf = get_idf(next(c for c in Globals.corpora if c.name == Globals.config['idf_corpus']))
+
+    a = get_idf(next(c for c in Globals.corpora if c.name == Globals.config['idf_corpus']), False)
+    b = get_idf(next(c for c in Globals.corpora if c.name == Globals.config['idf_corpus']), True)
+
+    Globals.idf = get_idf(next(c for c in Globals.corpora if c.name == Globals.config['idf_corpus']),
+                          lemmatized=Globals.config['lemmatized_idf'])
 
     for clazz in pipeline_classes:
         class_name = clazz.__name__

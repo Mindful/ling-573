@@ -1,12 +1,12 @@
 Globals:
   idf_corpus: 'AQUAINT' #AQUAINT or AQUAINT-2
-  lemmatized_idf: False
+  lemmatized_idf: True
 
 DocumentGroup:
 
 
 Selection:
-  method: 'select_ngram'
+  method: select_lexrank
 
   lexrank:
     threshold: False # can be False for continuous lexrank, otherwise float between 0 and 1 (noninclusive)
@@ -36,7 +36,7 @@ Ordering:
 Realization:
   similarity_metric: 'spacy'
   similarity_threshold: 0.97
-  log_realization_changes: True
+  log_realization_changes: False
   remove_quotes: True
   remove_questions: True
   remove_full_spans_that_match: ["^[;.:]"] #add regex patterns (in quotes) separated by commas. any spans containing regex will be filtered out

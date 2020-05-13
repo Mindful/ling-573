@@ -7,5 +7,5 @@ log        = metrics.log
 notification = complete
 arguments  = ""
 transfer_executable = false
-request_memory = 2*1024
+request_memory = 8*1024
 queue
