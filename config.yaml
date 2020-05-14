@@ -41,8 +41,11 @@ Realization:
   similarity_metric: 'spacy'
   similarity_threshold: 0.97
   log_realization_changes: False
+  dump_selected_content: False #another logging "feature". dump all of the spans (with article IDs) exactly as they are in selected content
   remove_quotes: True
   remove_questions: True
   minimum_sentence_length: 4 # this is # of tokens that a sentence requires AFTER being subjected to regex, etc
   remove_full_spans_that_match: [] #add regex patterns (in quotes) separated by commas. any spans containing regex will be filtered out
   remove_subspans_that_match: [] #add regex patterns (in quotes) separated by commas. Specific regex matches will be removed
+  remove_subjectless_sentences: False #Set to True to filter out ungrammatical fragments (with no subjects)
+  stop_overtrim: False  #Set to True to maximize the use of our 100 word space
