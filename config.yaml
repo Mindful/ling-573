@@ -21,16 +21,16 @@ Selection:
 
   ngram:
     reweight_scheme: 'sumbasic'
-    grouping: 'glob'
+    grouping: 'per_article'
     use_idf: 0
     num_sents_per_article: 2
     length_limit: 4
-    num_sents_per_glob: 100
-    lambda1: 0.2
-    lambda2: 0.9
-    lambda3: 0.0
-    lambda4: 0.0
-    lambda5: 0.2 # bias
+    num_sents_per_glob: 1000
+    unigram_weight: 0.2
+    bigram_weight: 0.9
+    trigram_weight: 0.0
+    headline_weight: 0.0
+    bias_Weight: 0.0 # bias
 
 Ordering:
   use_bert: False

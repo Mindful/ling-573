@@ -22,6 +22,7 @@ class NgramMetrics:
         self.bias_function = ir_bias(query_sentence(document_group))
         #self.idf = Globals.idf.copy()
         self.unigrams, self.unigram_size, self.bigrams, self.bigram_size, self.trigrams,self.trigram_size = self.get_grams()
+        self.cartesian_dist, self.cart_size = self.get_cartesian_dist(document_group)
 
     def re_weight(self,data,distribution):
         if self.config['reweight_scheme'] != 'before_selection':
@@ -44,7 +45,9 @@ class NgramMetrics:
             return False
         sent = self.sent2words(sentence)
         for unigram in sent:
-            self.unigrams[unigram] = self.unigrams[unigram] * self.unigrams[unigram]
+            self.unigrams[unigram] = self.unigrams[unigram]**2
+        for pair in self.get_pairs(sent):
+            self.cartesian_dist[pair] = self.cartesian_dist[pair]**2
         # re-weighting for bigrams hurts scores
 
         return None
@@ -105,6 +108,28 @@ class NgramMetrics:
         trigrams = {trigram: (trigrams[trigram]/num_trigrams) for trigram in trigrams}
         return unigrams, num_unigrams, bigrams, num_bigrams, trigrams, num_trigrams
 
+    def get_pairs(self,sentence):
+        return [word2 + ' ' + word for word in sentence for word2 in sentence if word != word2]
+
+    def get_cartesian_dist(self,doc_group):
+        record = {}
+        total_pairs = 0
+        for document in self.documents.articles:
+            sentences, __ = self.doc2sents(document)
+            for sent in sentences:
+                pairs = self.get_pairs(sent)
+                for pair in pairs:
+                    record.setdefault(pair,0)
+                    record[pair]+=1
+                total_pairs += len(pairs)
+        record = {k:(v/total_pairs) for k,v in record.items()}
+        return record, total_pairs
+
+    def cartesian_score(self,sentence):
+        pairs = self.get_pairs(sentence)
+        probas = np.array([self.cartesian_dist[pair] for pair in pairs])
+        return probas.sum()/len(pairs)
+
     def unigram_score(self,sentence, headline):
         unigrams = [word for word in sentence]
         probas = np.array([self.unigrams[word]  for word in unigrams])
@@ -149,10 +174,10 @@ class NgramMetrics:
     def score(self,sentences, headline):
         scores = []
         for sentence in sentences:
-            lambda1 = self.config['lambda1']
-            lambda2 = self.config['lambda2']
-            lambda3 = self.config['lambda3']
-            lambda4 = self.config['lambda4']
+            lambda1 = self.config['unigram_weight']
+            lambda2 = self.config['bigram_weight']
+            lambda3 = self.config['trigram_weight']
+            lambda4 = self.config['headline_weight']
             sent = self.sent2words(sentence)
             if headline:
                 headline_score = self.get_headline_score(sent, headline,lambda1,lambda2)
