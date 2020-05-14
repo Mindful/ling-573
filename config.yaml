@@ -23,13 +23,15 @@ Selection:
     reweight_scheme: 'sumbasic'
     grouping: 'per_article'
     use_idf: 0
-    num_sents_per_article: 2
+    num_sents_per_article: 1
     length_limit: 4
-    num_sents_per_glob: 1000
+    num_sents_per_glob: 100
     unigram_weight: 0.2
     bigram_weight: 0.9
     trigram_weight: 0.0
     headline_weight: 0.0
+    cartesian_weight: 0.0
+    query_weight: 0.00
     bias_weight: 0.0 # bias
 
 Ordering:

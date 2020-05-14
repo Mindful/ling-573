@@ -19,10 +19,16 @@ class NgramMetrics:
     def __init__(self,document_group,config):
         self.documents = document_group
         self.config = config
-        self.bias_function = ir_bias(query_sentence(document_group))
+        self.query = query_sentence(document_group)
+
+        self.bias_function = ir_bias(self.query)
         #self.idf = Globals.idf.copy()
         self.unigrams, self.unigram_size, self.bigrams, self.bigram_size, self.trigrams,self.trigram_size = self.get_grams()
-        self.cartesian_dist, self.cart_size = self.get_cartesian_dist(document_group)
+        if self.config['cartesian_weight'] > 0.0:
+            self.cartesian_dist, self.cart_size = self.get_cartesian_dist(document_group)
+        else:
+            self.cartesian_dist = None
+            self.cart_size = None
 
     def re_weight(self,data,distribution):
         if self.config['reweight_scheme'] != 'before_selection':
@@ -46,10 +52,10 @@ class NgramMetrics:
         sent = self.sent2words(sentence)
         for unigram in sent:
             self.unigrams[unigram] = self.unigrams[unigram]**2
+        """
         for pair in self.get_pairs(sent):
             self.cartesian_dist[pair] = self.cartesian_dist[pair]**2
-        # re-weighting for bigrams hurts scores
-
+        """
         return None
 
     def accept_token(self,token):
@@ -125,6 +131,14 @@ class NgramMetrics:
         record = {k:(v/total_pairs) for k,v in record.items()}
         return record, total_pairs
 
+    def query_score(self,sentence):
+        count = 0
+        q = self.sent2words(self.query)
+        for tok in q:
+            if tok in sentence:
+                count+=1
+        return count/len(sentence)
+
     def cartesian_score(self,sentence):
         pairs = self.get_pairs(sentence)
         probas = np.array([self.cartesian_dist[pair] for pair in pairs])
@@ -156,7 +170,7 @@ class NgramMetrics:
         idf_arr = np.array([Globals.idf[word] for word in self.sent2words(sentence)])
         return np.mean(idf_arr)
 
-    def get_headline_score(self,sentence,headline,lambda1,lambda2):
+    def headline_score(self,sentence,headline,lambda1,lambda2):
         if headline.ents:
             points = []
             for ent in headline.ents:
@@ -171,21 +185,25 @@ class NgramMetrics:
         else:
             return 0.0
 
-    def score(self,sentences, headline):
+    def compute_scores(self,sentence,headline):
+        if len(sentence) == 0:
+            return 0.0
         scores = []
-        for sentence in sentences:
-            lambda1 = self.config['unigram_weight']
-            lambda2 = self.config['bigram_weight']
-            lambda3 = self.config['trigram_weight']
-            lambda4 = self.config['headline_weight']
-            sent = self.sent2words(sentence)
-            if len(sent) > 0:
-                if headline:
-                    headline_score = self.get_headline_score(sent, headline,lambda1,lambda2)
-                else:
-                    headline_score = 0.0
-                scores.append(lambda1*self.unigram_score(sent,headline) + lambda2*self.bigram_score(sent,headline)+lambda3*self.trigram_score(sent)+ lambda4*headline_score)
-            else:
-                scores.append(0)
+        if self.config['unigram_weight'] > 0.0:
+            scores.append(self.config['unigram_weight']*self.unigram_score(sentence,headline))
+        if self.config['bigram_weight'] > 0.0:
+            scores.append(self.config['bigram_weight']*self.bigram_score(sentence,headline))
+        if self.config['trigram_weight'] > 0.0:
+            scores.append(self.config['trigram_weight']*self.trigram_score(sentence,headline))
+        if self.config['headline_weight'] > 0.0:
+            if headline:
+                scores.append(self.config['headline_weight']*self.headline_score(sentence,headline))
+        if self.config['cartesian_weight'] > 0.0:
+            scores.append(self.config['cartesian_weight']*self.cartesian_score(sentence))
+        if self.config['query_weight'] > 0.0:
+            scores.append(self.config['query_weight']*self.query_score(sentence))
         scores = np.array(scores)
-        return scores
+        return scores.sum()
+
+    def score(self,sentences, headline):
+        return np.array([self.compute_scores(self.sent2words(sentence),headline) for sentence in sentences])
