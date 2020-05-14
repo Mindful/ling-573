@@ -71,6 +71,7 @@ class Selection(PipelineComponent):
     def select_ngram(self):
         METRICS = NgramMetrics(self.doc_group,Selection.config['ngram'])
         content = []
+        score_record = []
         if Selection.config['ngram']['grouping'] == 'glob':
             sentences = []
             index_to_article = {}
@@ -83,19 +84,13 @@ class Selection(PipelineComponent):
                 sentences.extend(sents)
             #NUM_SENTENCES = min(Selection.config['ngram']['num_sents_per_glob'],len(sentences))
             NUM_SENTENCES = len(sentences)
-            BIASES = METRICS.get_bias(sentences) * Selection.config['ngram']['lambda5']
+            BIASES = METRICS.get_bias(sentences) * Selection.config['ngram']['bias_weight']
             remaining = [i for i in range(len(sentences))] #remaining sentences left for selection
-            score_record = []
             index_record  = []
+
             for n in range(NUM_SENTENCES):
                 remaining_sents = [ sentences[i] for i in remaining]
-
-                """
-                biases = np.array([BIASES[i] for i in remaining]) * Selection.config['ngram']['lambda5']
-                ngram_scores = (1 - Selection.config['ngram']['lambda5']) * METRICS.score(remaining_sents, headline=None)
-                final_scores = ngram_scores + biases
-                """
-                ngram_scores = (1 - Selection.config['ngram']['lambda5']) * METRICS.score(remaining_sents, headline=None)
+                ngram_scores = (1 - Selection.config['ngram']['bias_weight']) * METRICS.score(remaining_sents, headline=None)
                 final_scores = ngram_scores
                 scores = sorted([(ele, final_scores[i])
                                  for i,ele in enumerate(remaining)], key=lambda x: x[1], reverse=True)
@@ -107,10 +102,11 @@ class Selection(PipelineComponent):
                 score_record.append(selection[1])
                 remaining.remove(selection[0])
                 index_record.append(selection[0])
-
+            
             score_record = np.array(score_record)
             score_record = (score_record/score_record.sum()) *  (1 -Selection.config['ngram']['lambda5'])
             content = [Content(c.span,score_record[i]+BIASES[index_record[i]],c.article) for i,c in enumerate(content)]
+
 
         elif Selection.config['ngram']['grouping'] == 'per_article':
             for article in self.doc_group.articles:
@@ -118,8 +114,8 @@ class Selection(PipelineComponent):
                 sentences = self._get_sentences(article)
                 NUM_SENTENCES = min(Selection.config['ngram']['num_sents_per_article'], len(sentences))
 
-                biases = METRICS.get_bias(sentences)*Selection.config['ngram']['lambda5']
-                ngram_scores = (1-Selection.config['ngram']['lambda5'])*METRICS.score(sentences,headline)
+                biases = METRICS.get_bias(sentences)*Selection.config['ngram']['bias_weight']
+                ngram_scores = (1-Selection.config['ngram']['bias_weight'])*METRICS.score(sentences,headline)
                 final_scores = ngram_scores + biases
 
                 scores = sorted([(i,final_scores[i])  for i in range(len(sentences))],key=lambda x: x[1], reverse=True)
@@ -134,9 +130,9 @@ class Selection(PipelineComponent):
                     METRICS.re_weight2(sentence)
                     if len(str(sentence).split()) > Selection.config['ngram']['length_limit']:
                         content.append(Content(sentence,score,article))
+                        score_record.append(score)
                     else:
                         pass
-
         return content
 
     def select_simple(self):
