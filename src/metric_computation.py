@@ -143,6 +143,7 @@ def calculate_idf_score(sparse_vector, vocabulary, smooth=False):
 
     bar = Bar('Computing IDF scores...', max=len(vocabulary))
     for i, word in enumerate(vocabulary):
+        word = word.lower()  # this unmarks entities the way they were marked when counting, but that turned out to be harmful
         word_doc_count = vocab_indice_article_counts[i]
         idf_scores[word] = math.log(total_number_docs / word_doc_count)
         bar.next()
