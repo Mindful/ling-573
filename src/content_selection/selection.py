@@ -26,10 +26,10 @@ class Selection(PipelineComponent):
         Selection.selection_method = getattr(Selection, Selection.config['method'])
         if Globals.config['lemmatized_idf']:
             Token.set_extension('text',
-                                getter=lambda token: token.lower_.title() if token.ent_type != 0 else token.lemma_)
+                                getter=lambda token: token.lemma_.lower())
         else:
             Token.set_extension('text',
-                                getter=lambda token: token.lower_.title() if token.ent_type != 0 else token.lower_)
+                                getter=lambda token: token.lower_)
 
 
     def __init__(self, document_group_object, max_sentences=20):
