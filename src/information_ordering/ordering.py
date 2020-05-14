@@ -25,6 +25,9 @@ class Ordering(PipelineComponent):
         Given selected content, return sentences in best order according to expert weights
 
         '''
+        if len(realization_object.realized_content) < 1:
+            raise Exception('Error', 'Received an empty list of sentences to order')
+
         use_BERT = Ordering.config['use_bert']
         all_sentences = realization_object.realized_content.copy()
 
