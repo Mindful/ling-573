@@ -30,7 +30,7 @@ Selection:
     bigram_weight: 0.9
     trigram_weight: 0.0
     headline_weight: 0.0
-    bias_Weight: 0.0 # bias
+    bias_weight: 0.0 # bias
 
 Ordering:
   use_bert: False
