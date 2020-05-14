@@ -28,7 +28,7 @@ Selection:
     num_sents_per_glob: 100
     unigram_weight: 0.2
     bigram_weight: 0.9
-    trigram_weight: 0.0
+    trigram_weight: 0.1
     headline_weight: 0.0
     cartesian_weight: 0.0
     query_weight: 0.00

@@ -144,7 +144,7 @@ class NgramMetrics:
         probas = np.array([self.cartesian_dist[pair] for pair in pairs])
         return probas.sum()/len(pairs)
 
-    def unigram_score(self,sentence, headline):
+    def unigram_score(self,sentence):
         unigrams = [word for word in sentence]
         probas = np.array([self.unigrams[word]  for word in unigrams])
         self.re_weight(unigrams,1)
@@ -154,7 +154,7 @@ class NgramMetrics:
             probas = probas*idfs
         return np.sum(probas)/len(sentence)
 
-    def bigram_score(self,sentence, headline):
+    def bigram_score(self,sentence):
         bigrams = [sentence[i-1] + ' ' + sentence[i] for i in range(1,len(sentence))]
         probas = np.array([ self.bigrams[bigram]  for bigram in bigrams])
         self.re_weight(bigrams,2)
@@ -190,11 +190,11 @@ class NgramMetrics:
             return 0.0
         scores = []
         if self.config['unigram_weight'] > 0.0:
-            scores.append(self.config['unigram_weight']*self.unigram_score(sentence,headline))
+            scores.append(self.config['unigram_weight']*self.unigram_score(sentence))
         if self.config['bigram_weight'] > 0.0:
-            scores.append(self.config['bigram_weight']*self.bigram_score(sentence,headline))
+            scores.append(self.config['bigram_weight']*self.bigram_score(sentence))
         if self.config['trigram_weight'] > 0.0:
-            scores.append(self.config['trigram_weight']*self.trigram_score(sentence,headline))
+            scores.append(self.config['trigram_weight']*self.trigram_score(sentence))
         if self.config['headline_weight'] > 0.0:
             if headline:
                 scores.append(self.config['headline_weight']*self.headline_score(sentence,headline))
