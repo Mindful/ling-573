@@ -17,6 +17,9 @@ class Content:
     def __repr__(self):
         return str(self.__dict__)
 
+    def ident(self):
+        return str(self.span._.sent_index) + self.article.id
+
 class Selection(PipelineComponent):
 
     selection_method = None
@@ -78,7 +81,8 @@ class Selection(PipelineComponent):
                     index_to_article[i] = article
                 prev_i += len(sents)
                 sentences.extend(sents)
-            NUM_SENTENCES = min(Selection.config['ngram']['num_sents_per_glob'],len(sentences))
+            #NUM_SENTENCES = min(Selection.config['ngram']['num_sents_per_glob'],len(sentences))
+            NUM_SENTENCES = len(sentences)
             BIASES = METRICS.get_bias(sentences) * Selection.config['ngram']['lambda5']
             remaining = [i for i in range(len(sentences))] #remaining sentences left for selection
             score_record = []
@@ -105,7 +109,7 @@ class Selection(PipelineComponent):
                 index_record.append(selection[0])
 
             score_record = np.array(score_record)
-            score_record = score_record/score_record.sum()
+            score_record = (score_record/score_record.sum()) *  (1 -Selection.config['ngram']['lambda5'])
             content = [Content(c.span,score_record[i]+BIASES[index_record[i]],c.article) for i,c in enumerate(content)]
 
         elif Selection.config['ngram']['grouping'] == 'per_article':
@@ -154,12 +158,25 @@ class Selection(PipelineComponent):
 
         return content
 
+    def select_joint(self):
+        lexrank_results = self.select_lexrank()
+        ngram_results = self.select_ngram()
+
+        lexrank_map = {
+            x.ident(): x for x in lexrank_results
+        }
+
+        results = [
+            Content(x.span, max(x.score, lexrank_map[x.ident()].score), x.article) for x in ngram_results
+            if x.ident() in lexrank_map
+        ]
+
+        return results
+
     def select(self):
         content = sorted(self.selection_method(), key= lambda c: c.score, reverse=True)
         if self.max_sentences is not None:
             content = content[0:self.max_sentences]
 
         return content
-
-
 

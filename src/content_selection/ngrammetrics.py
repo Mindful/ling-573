@@ -154,10 +154,13 @@ class NgramMetrics:
             lambda3 = self.config['lambda3']
             lambda4 = self.config['lambda4']
             sent = self.sent2words(sentence)
-            if headline:
-                headline_score = self.get_headline_score(sent, headline,lambda1,lambda2)
+            if len(sent) > 0:
+                if headline:
+                    headline_score = self.get_headline_score(sent, headline,lambda1,lambda2)
+                else:
+                    headline_score = 0.0
+                scores.append(lambda1*self.unigram_score(sent,headline) + lambda2*self.bigram_score(sent,headline)+lambda3*self.trigram_score(sent)+ lambda4*headline_score)
             else:
-                headline_score = 0.0
-            scores.append(lambda1*self.unigram_score(sent,headline) + lambda2*self.bigram_score(sent,headline)+lambda3*self.trigram_score(sent)+ lambda4*headline_score)
+                scores.append(0)
         scores = np.array(scores)
         return scores
