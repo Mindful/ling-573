@@ -20,7 +20,7 @@ def main():
 
     setup(pipeline_classes)
 
-    for index, topic in enumerate(topics):
+    for index, topic in enumerate(topics[:5]):
         Globals.logger.info('Processing document group {}/{}'.format(index+1, len(topics)))
         doc_group = DocumentGroup(topic)
         selected_content = Selection(doc_group)

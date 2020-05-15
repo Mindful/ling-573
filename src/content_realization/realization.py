@@ -53,15 +53,15 @@ class Realization(PipelineComponent):
         else:
             max_words_for_functions = 0
         sorted_sents = sorted(selection_object.selected_content, key=lambda x: x.score, reverse=True)
-        unique_sents = remove_redundant_sents(sorted_sents,max_words_for_functions)
         if Realization.config['remove_quotes'] == True:
-            unique_sents = remove_quotes(unique_sents,max_words_for_functions)
+            cand_sents = remove_quotes(sorted_sents,max_words_for_functions)
         if Realization.config['remove_questions'] == True:
-            unique_sents = remove_questions(unique_sents,max_words_for_functions)
+            cand_sents = remove_questions(cand_sents,max_words_for_functions)
         if Realization.config['remove_subjectless_sentences'] == True:
-            unique_sents = remove_subjectless_sentences(unique_sents,max_words_for_functions)
+            cand_sents = remove_subjectless_sentences(cand_sents,max_words_for_functions)
         if len(Realization.config['remove_full_spans_that_match']) > 0:
-            unique_sents = filter_content_by_regex_list(unique_sents,Realization.config['remove_full_spans_that_match'])
+            cand_sents = filter_content_by_regex_list(cand_sents,Realization.config['remove_full_spans_that_match'])
+        unique_sents = remove_redundant_sents(cand_sents,max_words_for_functions)
         unique_sents = trim_content_objs(unique_sents,max_words_for_functions)
         if len(Realization.config['remove_subspans_that_match']) > 0:
             unique_sents = remove_text_by_regex_list(unique_sents,Realization.config['remove_subspans_that_match'],max_words_for_functions)
@@ -75,7 +75,7 @@ class Realization(PipelineComponent):
             else:
                 removed.append(content)
         self.output_words = total_words
-        return_content = [content for content in sorted_sents if content not in removed]
+        return_content = [content for content in unique_sents if content not in removed]
         return_content = clean_up_objects(return_content)
         return return_content
 
@@ -311,11 +311,11 @@ def remove_redundant_sents(content_objs,max_length = 100):
     removed = []
     for i, content_obj in enumerate(content_objs):
         if words_trimmed >= stop_after_trimming:
-            if Realization.config['log_realization_changes'] == True:
-                Realization.logger.info("remove_redundant_sents: hit trimming limit. skip rest of method.")
             break
         if content_obj not in removed:
             for compare_obj in content_objs[i + 1:]:
+                if words_trimmed >= stop_after_trimming:
+                    break
                 if is_redundant(content_obj.span, compare_obj.span,
                             similarity_metric=similarity_metric,
                             similarity_threshold=similarity_threshold) \
@@ -326,6 +326,9 @@ def remove_redundant_sents(content_objs,max_length = 100):
                         Realization.logger.info("Removing redundant sentence")
                         Realization.logger.info("Kept sentence: "+content_obj.span.text)
                         Realization.logger.info("Removed sentence: " + compare_obj.span.text)
+    if words_trimmed >= stop_after_trimming:
+        if Realization.config['log_realization_changes'] == True:
+            Realization.logger.info("remove_redundant_sents: hit trimming limit. skip rest of method.")
     return [content for content in content_objs if content not in removed]
 
 
