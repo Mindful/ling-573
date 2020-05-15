@@ -52,6 +52,7 @@ class Realization(PipelineComponent):
             max_words_for_functions = self.word_quota
         else:
             max_words_for_functions = 0
+        ## First apply methods that leave the spaCy span intact (add or remove full content objects)
         sorted_sents = sorted(selection_object.selected_content, key=lambda x: x.score, reverse=True)
         if Realization.config['remove_quotes'] == True:
             cand_sents = remove_quotes(sorted_sents,max_words_for_functions)
@@ -62,7 +63,9 @@ class Realization(PipelineComponent):
         if len(Realization.config['remove_full_spans_that_match']) > 0:
             cand_sents = filter_content_by_regex_list(cand_sents,Realization.config['remove_full_spans_that_match'])
         unique_sents = remove_redundant_sents(cand_sents,max_words_for_functions)
+        ## trim_content_objs modifies the realized_text on each content object. span no longer reliable
         unique_sents = trim_content_objs(unique_sents,max_words_for_functions)
+        ## Now, apply any methods that act only on the realized text.
         if len(Realization.config['remove_subspans_that_match']) > 0:
             unique_sents = remove_text_by_regex_list(unique_sents,Realization.config['remove_subspans_that_match'],max_words_for_functions)
         removed = []
@@ -207,7 +210,6 @@ def set_initial_word_to_upper(sentence):
         sentence = sentence.text
     except:
         sentence = sentence
-    #sentence = sentence.capitalize()
     sentence_list = sentence.split()
     sentence_list[0] = sentence_list[0].capitalize()
     sentence = " ".join(sentence_list)
@@ -229,7 +231,6 @@ def remove_sentence_initial_terms(sentence):
         pos2 = sentence[0].pos
         tag = sentence[0].tag
         tag2 = sentence[0].tag_
-        #if pos in ('CCONJ','ADV'):
         if tag2 in ('CC','RB','RBS','RBR'):
             sentence = sentence[1:]
             # Remove sentence-initial commas that might be there now
@@ -250,10 +251,8 @@ def remove_appositives(sentence):
     indices_to_remove = set()
     for i in range(0,len(sentence)):
         if sentence[i].dep_ == 'appos':
-            #indices_to_remove.add(sentence[i].idx)
             indices_to_remove.add(sentence[i].i)
             for c in sentence[i].children:
-                #indices_to_remove.add(c.idx)
                 indices_to_remove.add(c.i)
 
     spans_to_remove = [] #list of tuples (start, end) of spans to remove
