@@ -1,34 +1,25 @@
 Globals:
   idf_corpus: 'AQUAINT' #AQUAINT or AQUAINT-2
   lemmatized_idf: False
-
 DocumentGroup:
-
-
 Selection:
   method: select_ngram
-
   lexrank:
     threshold: False # can be False for continuous lexrank, otherwise float between 0 and 1 (noninclusive)
     damping: 0.4 # this also controls the degree of bias, if we have bias
-
     # possibilities in order of historical performance: tf_idf_similarity_matrix, tf_idf_vector_similarity_matrix, word_vector_similarity_matrix
     similarity_matrix: tf_idf_similarity_matrix
-
     # possibilities in order of historical performance: ir_bias, idf_weighted_vector_bias, or False (for no bias)
     #bias:  ir_bas
     bias: ir_bias
-
   ngram:
     reweight_scheme: 'sumbasic'
-    grouping: 'glob'
+    grouping: 'per_article'
     use_idf: 0
-    num_sents_per_article: 1
-    forward_backward: False
+    num_sents_per_article: 3
+    forward_backward: True
     length_limit: 4
     num_sents_per_glob: 1000
-
-
     unigram_weight: 0.2
     bigram_weight: 0.9
     trigram_weight: 0.00
@@ -36,10 +27,8 @@ Selection:
     cartesian_weight: 0.0
     query_weight: 0.00
     bias_weight: 0.0 # bias
-
 Ordering:
   use_bert: False
-
 Realization:
   similarity_metric: 'spacy'
   similarity_threshold: 0.97

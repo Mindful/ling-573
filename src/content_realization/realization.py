@@ -134,7 +134,7 @@ def trim_content_objs(content_objs,max_length = 100):
         if words_trimmed >= stop_after_trimming:
             if Realization.config['log_realization_changes'] == True:
                 Realization.logger.info("new_content_objs: hit trimming limit. skip rest of method.")
-            new_content_objs.append(content_objs)
+            new_content_objs.append(content_obj)
             continue
         new_text = trim(content_obj.span)
         content_obj.realized_text = new_text
