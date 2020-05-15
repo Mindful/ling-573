@@ -21,14 +21,17 @@ Selection:
 
   ngram:
     reweight_scheme: 'sumbasic'
-    grouping: 'per_article'
+    grouping: 'glob'
     use_idf: 0
     num_sents_per_article: 1
+    forward_backward: False
     length_limit: 4
-    num_sents_per_glob: 100
+    num_sents_per_glob: 1000
+
+
     unigram_weight: 0.2
     bigram_weight: 0.9
-    trigram_weight: 0.1
+    trigram_weight: 0.00
     headline_weight: 0.0
     cartesian_weight: 0.0
     query_weight: 0.00

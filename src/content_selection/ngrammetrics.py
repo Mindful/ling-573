@@ -22,13 +22,18 @@ class NgramMetrics:
         self.query = query_sentence(document_group)
 
         self.bias_function = ir_bias(self.query)
+        #self.bias_function = idf_weighted_vector_bias(self.query)
         #self.idf = Globals.idf.copy()
         self.unigrams, self.unigram_size, self.bigrams, self.bigram_size, self.trigrams,self.trigram_size = self.get_grams()
+        self.memory = {"unigrams":self.unigrams.copy(),
+                       "bigrams":self.bigrams.copy()}
+        # Takes too long when used in tandem with Glob because every sentence will be considered again after reweight
         if self.config['cartesian_weight'] > 0.0:
             self.cartesian_dist, self.cart_size = self.get_cartesian_dist(document_group)
         else:
             self.cartesian_dist = None
             self.cart_size = None
+
 
     def re_weight(self,data,distribution):
         if self.config['reweight_scheme'] != 'before_selection':
@@ -52,10 +57,6 @@ class NgramMetrics:
         sent = self.sent2words(sentence)
         for unigram in sent:
             self.unigrams[unigram] = self.unigrams[unigram]**2
-        """
-        for pair in self.get_pairs(sent):
-            self.cartesian_dist[pair] = self.cartesian_dist[pair]**2
-        """
         return None
 
     def accept_token(self,token):
@@ -63,6 +64,7 @@ class NgramMetrics:
         if token.is_punct or tok_str in spacy.lang.en.stop_words.STOP_WORDS or tok_str == '`':
             return False
         return True
+
 
     def clean_headline(self,headline):
         cleaned = None
@@ -73,6 +75,9 @@ class NgramMetrics:
 
     def sent2words(self,sent):
         return [str(token).lower() for token in sent if self.accept_token(token)]
+
+    def _get_sentences(self, article):
+        return [sentence for paragraph in article.paragraphs for sentence in paragraph.sents]
 
     def doc2sents(self,document):
         sentences = [self.sent2words(sentence)  for paragraph in document.paragraphs for sentence in paragraph.sents]
@@ -207,3 +212,84 @@ class NgramMetrics:
 
     def score(self,sentences, headline):
         return np.array([self.compute_scores(self.sent2words(sentence),headline) for sentence in sentences])
+
+    def refresh(self):
+        self.unigrams = self.memory['unigrams']
+        self.bigrams = self.memory['bigrams']
+        return None
+
+    def per_article(self,articles,N,record_sents,num_batches=1.0):
+        for article in articles:
+            headline = article.headline
+            sentences = self._get_sentences(article)
+            NUM_SENTENCES = min(N, len(sentences))
+            biases = self.get_bias(sentences) * self.config['bias_weight']
+            ngram_scores = (1 - self.config['bias_weight']) * self.score(sentences, headline)
+            final_scores = ngram_scores + biases
+            scores = sorted([(i, final_scores[i]) for i in range(len(sentences))], key=lambda x: x[1], reverse=True)
+            selections = sorted([scores[n] for n in range(NUM_SENTENCES)], key=lambda x: x[0])
+            for tupl in selections:
+                sentence = sentences[tupl[0]]
+                score = tupl[1]
+                self.re_weight2(sentence)
+                if len(str(sentence).split()) > self.config['length_limit']:
+                    record_sents.setdefault((sentence, article), 0.0)
+                    record_sents[(sentence, article)] += score / num_batches
+        return record_sents
+
+    def basic_per_article(self,N):
+        record = {}
+        content = self.per_article(self.documents.articles,N,record)
+        return content
+
+    def forward_backward(self,N):
+        record = {}
+        record = self.per_article(self.documents.articles,N,record_sents=record,num_batches=2)
+        self.refresh()
+        self.documents.articles.reverse()
+        record = self.per_article(self.documents.articles,N, record_sents=record,num_batches=2)
+        return record
+
+    def glob(self):
+        content = []
+        score_record = []
+        sentences = []
+        index_to_article = {}
+        prev_i = 0
+        for article in self.documents.articles:  # because we taking all the text irrespective of article, we should have a record of which sents came from where
+            sents = self._get_sentences(article)
+            for i in range(prev_i, prev_i + len(sents)):
+                index_to_article[i] = article
+            prev_i += len(sents)
+            sentences.extend(sents)
+
+        NUM_SENTENCES = min(self.config['num_sents_per_glob'], len(sentences))
+        BIASES = self.get_bias(sentences) * self.config['bias_weight']
+        remaining = [i for i in range(len(sentences))]  # remaining sentences left for selection
+        index_record = []
+        for n in range(NUM_SENTENCES):
+            remaining_sents = [sentences[i] for i in remaining]
+            ngram_scores = (1 - self.config['bias_weight']) * self.score(remaining_sents,headline=None)
+            final_scores = ngram_scores
+            scores = sorted([(ele, final_scores[i])
+                             for i, ele in enumerate(remaining)], key=lambda x: x[1], reverse=True)
+            selection = scores[0]
+            sentence = sentences[selection[0]]
+            self.re_weight2(sentence)
+            content.append((sentence, selection[1], index_to_article[selection[0]]))
+            score_record.append(selection[1])
+            remaining.remove(selection[0])
+            index_record.append(selection[0])
+        score_record = np.array(score_record)
+        score_record = score_record / score_record.sum()
+        return {(tupl[0], tupl[2]): score_record[i] + BIASES[index_record[i]] for i, tupl in enumerate(content)}
+
+    def _select_(self):
+        mode = self.config['grouping']
+        if mode == 'per_article':
+            if self.config['forward_backward']:
+                return self.forward_backward(self.config['num_sents_per_article'])
+            return self.basic_per_article(self.config['num_sents_per_article'])
+        elif mode == 'glob':
+            return self.glob()
+        return True
