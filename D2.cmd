@@ -1,4 +1,4 @@
-executable = run_d2.sh
+executable = run.sh
 getenv     = true
 input      = /dev/null
 output     = d2.out
