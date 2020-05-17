@@ -4,11 +4,11 @@ UW CLMS program project for ling-573 by Paige Finkelstein, Jacob Hoffman, Wesley
 <br>
 
 ## Running the full system (summarization and ROUGE evaluation) on patas
-All that is needed to run the end-to-end system on the `devtest` dataset on patas is to submit D2.cmd to condor:
+All that is needed to run the end-to-end system on the `devtest` dataset on patas is to submit D3.cmd to condor:
 
-`condor_submit D2.cmd`
+`condor_submit D3.cmd`
 
-This will run the **run_d2.sh** script, which will set up a conda environment and install all of the necessary dependencies. It will write the generated summaries to the **output** directory, and will write the ROUGE evalulation score report to **results/rouge_scores.out**.
+This will run the **run.sh** script, which will set up a conda environment and install all of the necessary dependencies. It will write the generated summaries to the **output** directory, and will write the ROUGE evalulation score report to **results/rouge_scores.out**.
 
 
 ##### To switch from running on the **dev_test** corpus to the **train** corpus
