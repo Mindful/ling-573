@@ -320,32 +320,31 @@ def remove_redundant_sents(content_objs,max_length = 100):
 
     words_trimmed = 0
     removed = []
-    for i, content_obj in enumerate(content_objs):
+    for content_obj in content_objs:
         if words_trimmed >= stop_after_trimming:
             break
         if content_obj not in removed:
-            for compare_obj in content_objs[i + 1:]:
+            for compare_obj in content_objs:
                 if words_trimmed >= stop_after_trimming:
                     break
-                if is_redundant(content_obj.span, compare_obj.span,
-                            similarity_metric=similarity_metric,
-                            similarity_threshold=similarity_threshold) \
-                            and compare_obj not in removed:
-                    removed.append(compare_obj)
-                    words_trimmed += len(compare_obj.span.text.split())
-                    if Realization.config['log_realization_changes']:
-                        Realization.logger.info("Removing redundant sentence")
-                        Realization.logger.info("Kept sentence: "+content_obj.span.text)
-                        Realization.logger.info("Removed sentence: " + compare_obj.span.text)
+                if not compare_obj is content_obj:
+                    if is_redundant(content_obj.span, compare_obj.span,
+                                similarity_metric=similarity_metric,
+                                similarity_threshold=similarity_threshold) \
+                                and compare_obj not in removed:
+                        removed.append(compare_obj)
+                        words_trimmed += len(compare_obj.span.text.split())
+                        if Realization.config['log_realization_changes']:
+                            Realization.logger.info("Removing redundant sentence")
+                            Realization.logger.info("Kept sentence: "+content_obj.span.text)
+                            Realization.logger.info("Removed sentence: " + compare_obj.span.text)
     if words_trimmed >= stop_after_trimming:
         if Realization.config['log_realization_changes']:
             Realization.logger.info("remove_redundant_sents: hit trimming limit. skip rest of method.")
     return [content for content in content_objs if content not in removed]
 
 
-def is_redundant(sent_1, sent_2,
-                 similarity_metric='spacy',
-                 similarity_threshold=.97):
+def is_redundant(sent_1, sent_2, similarity_metric='spacy', similarity_threshold=.97):
     '''
     ** Given two sentences, check if they're redundant
     :param sent_1: a spacy span built from a sentence
@@ -354,8 +353,15 @@ def is_redundant(sent_1, sent_2,
     :param similarity_threshold: what % similarity is the cutoff for redundancy
     :return: True/False for redundant/not redundant
     '''
+    s1 = [tok.text.lower() for tok in sent_1]
+    s2 = [tok.text.lower() for tok in sent_2]
+    union = list(set(s1) & set(s2))
+
+    if len(union) / len(s1) > 0.65:
+        return True
+
     if similarity_metric=='spacy':
-        sim = spacy_similarity(sent_1,sent_2)
+        sim = spacy_similarity(sent_1, sent_2)
     elif similarity_metric=='bert':
         sim = bert_similarity(sent_1, sent_2)
     else:
