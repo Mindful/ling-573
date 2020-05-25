@@ -61,7 +61,7 @@ def clean_text(text, remove_quotes=False):
     text = re.sub(r'^\s*nn\s*$', '', text)  # remove nn lines
     text = re.sub(r'^\s*(\s*-\s*)+\s*$', '', text)  # remove  - - - - lines
     text = re.sub(r'^\.+$', '', text)  # remove empty ... lines, e.g. "." or "..."
-    text = re.sub(r'.*-.*-.*\s+', '', text)  # remove Bc-fla-lafave-deal 
+    text = re.sub(r'[A-Z|a-z]*-[A-Z|a-z]*-[A-Z|a-z]*-[A-Z|a-z]*\s+', '', text)  # remove Bc-fla-lafave-deal 
     text = re.sub(r'\( \) --', '', text)  # remove ( ) --
 
 
