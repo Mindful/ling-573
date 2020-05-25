@@ -5,11 +5,9 @@ from common import PipelineComponent, ROOT_DIR
 from os.path import join
 import datetime
 
+WORD_QUOTA = 100
 
 class Realization(PipelineComponent):
-
-    word_quota = 100
-
     @staticmethod
     def setup():
         if Realization.config['similarity_metric'] == 'bert':
@@ -19,59 +17,65 @@ class Realization(PipelineComponent):
 
     def __init__(self, selection_object):
         self.selected_content = selection_object
-        if Realization.config['dump_selected_content'] == True:
-            self.dump_selected_content()
         self.doc_group = selection_object.doc_group
         self.input_words = get_num_words_in_collection(self.selected_content.selected_content)
-        self.input_sentences = get_num_sentences_in_collection(self.selected_content.selected_content)
         self.realized_content = self.narrow_content(selection_object)
-        self.output_sentences = len(self.realized_content)
-        if Realization.config['log_realization_changes'] == True:
+
+        if Realization.config['dump_selected_content']:
+            self.dump_selected_content()
+
+        if Realization.config['log_realization_changes']:
             self.log_realization_changes()
 
+
     def log_realization_changes(self):
-            for content_object in self.realized_content:
-                Realization.logger.info("Article ID: "+str(content_object.article.id))
-                Realization.logger.info("\tInput Text: "+str(content_object.span.text))
-                Realization.logger.info("\tOutput Text: "+str(content_object.realized_text))
-            Realization.logger.info("\tNarrowed from "+str(self.input_words)+" words to "+str(self.output_words)+" words")
-            Realization.logger.info("\tNarrowed from "+str(self.input_sentences)+" sentences to "+str(self.output_sentences)+" sentences")
+        for content_object in self.realized_content:
+            Realization.logger.info("Article ID: {}".format(content_object.article.id))
+            Realization.logger.info("\tInput Text: {}".format(content_object.span.text))
+            Realization.logger.info("\tOutput Text: {}".format(content_object.realized_text))
+
+        initial_word_count = get_num_words_in_collection(self.selected_content.selected_content)
+        Realization.logger.info("\tNarrowed from {} words to {} words".format(initial_word_count, self.output_words))
+        Realization.logger.info("\tNarrowed from {} sentences to {} sentences".format(len(self.selected_content.selected_content), len(self.realized_content)))
+
+
     def dump_selected_content(self):
         for content_object in self.selected_content.selected_content:
-            Realization.logger.info("article id: "+str(content_object.article.id))
-            Realization.logger.info("span: "+str(content_object.span))
+            Realization.logger.info("article id: " + str(content_object.article.id))
+            Realization.logger.info("span: " + str(content_object.span))
 
 
-    def narrow_content(self,selection_object):
+    def narrow_content(self, selection_object):
         '''
         Given selected content, narrow to 100 words
         :param selection_object: internal selection object from content_selection module
         :return: selection object with unwanted content removed
         '''
-        if Realization.config['stop_overtrim'] == True:
-            max_words_for_functions = self.word_quota
-        else:
-            max_words_for_functions = 0
+        cand_sents = sorted(selection_object.selected_content, key=lambda x: x.score, reverse=True)
+
         ## First apply methods that leave the spaCy span intact (add or remove full content objects)
-        sorted_sents = sorted(selection_object.selected_content, key=lambda x: x.score, reverse=True)
-        if Realization.config['remove_quotes'] == True:
-            cand_sents = remove_quotes(sorted_sents,max_words_for_functions)
-        if Realization.config['remove_questions'] == True:
-            cand_sents = remove_questions(cand_sents,max_words_for_functions)
-        if Realization.config['remove_subjectless_sentences'] == True:
-            cand_sents = remove_subjectless_sentences(cand_sents,max_words_for_functions)
+        if Realization.config['remove_quotes']:
+            cand_sents = remove_quotes(cand_sents)
+        if Realization.config['remove_questions']:
+            cand_sents = remove_questions(cand_sents)
+        if Realization.config['remove_subjectless_sentences']:
+            cand_sents = remove_subjectless_sentences(cand_sents)
         if len(Realization.config['remove_full_spans_that_match']) > 0:
-            cand_sents = filter_content_by_regex_list(cand_sents,Realization.config['remove_full_spans_that_match'])
-        unique_sents = remove_redundant_sents(cand_sents,max_words_for_functions)
+            cand_sents = filter_content_by_regex_list(cand_sents, Realization.config['remove_full_spans_that_match'])
+
+        unique_sents = remove_redundant_sents(cand_sents)
+
         ## trim_content_objs modifies the realized_text on each content object. span no longer reliable
-        unique_sents = trim_content_objs(unique_sents,max_words_for_functions)
+        unique_sents = trim_content_objs(unique_sents)
+
         ## Now, apply any methods that act only on the realized text.
         if len(Realization.config['remove_subspans_that_match']) > 0:
-            unique_sents = remove_text_by_regex_list(unique_sents,Realization.config['remove_subspans_that_match'],max_words_for_functions)
+            unique_sents = remove_text_by_regex_list(unique_sents, Realization.config['remove_subspans_that_match'])
         removed = []
         total_words = 0
+
         for i, content in enumerate(unique_sents):
-            remaining_words = self.word_quota - total_words
+            remaining_words = WORD_QUOTA - total_words
             text_len = len(content.realized_text.split())
             if text_len <= remaining_words and text_len > Realization.config['minimum_sentence_length']:
                 total_words += text_len
@@ -80,62 +84,70 @@ class Realization(PipelineComponent):
         self.output_words = total_words
         return_content = [content for content in unique_sents if content not in removed]
         return_content = clean_up_objects(return_content)
+   
         return return_content
 
-def remove_questions(content_objs,max_length = 100):
+
+def remove_questions(content_objs):
     current_len = get_num_words_in_collection(content_objs)
-    stop_after_trimming = current_len - max_length
+    stop_after_trimming = current_len - WORD_QUOTA
+
     if stop_after_trimming < 0:
-        if Realization.config['log_realization_changes'] == True:
+        if Realization.config['log_realization_changes']:
             Realization.logger.info("remove_questions: already below word limit. skip method.")
         return content_objs
     words_trimmed = 0
     removed = []
-    for i, content_obj in enumerate(content_objs):
+
+    for content_obj in content_objs:
         if words_trimmed >= stop_after_trimming:
-            if Realization.config['log_realization_changes'] == True:
+            if Realization.config['log_realization_changes']:
                 Realization.logger.info("remove_questions: hit trimming limit. skip rest of method.")
             break
         if re.match(".*\?.*",content_obj.span.text) is not None:
             removed.append(content_obj)
-            if Realization.config['log_realization_changes'] == True:
-                Realization.logger.info("Removing sentence with question: "+
-                                        content_obj.span.text)
+            if Realization.config['log_realization_changes']:
+                Realization.logger.info("Removing sentence with question: {}".format(content_obj.span.text))
+
     return [content for content in content_objs if content not in removed]
 
-def remove_quotes(content_objs,max_length=100):
+
+def remove_quotes(content_objs):
     current_len = get_num_words_in_collection(content_objs)
-    stop_after_trimming = current_len - max_length
+    stop_after_trimming = current_len - WORD_QUOTA
+
     if stop_after_trimming < 0:
-        if Realization.config['log_realization_changes'] == True:
-            Realization.logger.info("remove_quotes: already below word limit. skip method.")
+        if Realization.config['log_realization_changes']:
+            Realization.logger.info('remove_quotes: already below word limit. skip method.')
         return content_objs
+
     words_trimmed = 0
     removed = []
-    for i, content_obj in enumerate(content_objs):
+    for content_obj in content_objs:
         if words_trimmed >= stop_after_trimming:
-            if Realization.config['log_realization_changes'] == True:
+            if Realization.config['log_realization_changes']:
                 Realization.logger.info("remove_quotes: hit trimming limit. skip rest of method.")
             break
         if content_obj.span._.contains_quote:
             removed.append(content_obj)
-            if Realization.config['log_realization_changes'] == True:
+            if Realization.config['log_realization_changes']:
                 Realization.logger.info("Removing sentence with quotation: "+
                                     content_obj.span.text)
     return [content for content in content_objs if content not in removed]
+
 
 def trim_content_objs(content_objs,max_length = 100):
     current_len = get_num_words_in_collection(content_objs)
     stop_after_trimming = current_len - max_length
     if stop_after_trimming < 0:
-        if Realization.config['log_realization_changes'] == True:
+        if Realization.config['log_realization_changes']:
             Realization.logger.info("trim_content_objs: already below word limit. skip method.")
         return content_objs
     words_trimmed = 0
     new_content_objs = []
     for i, content_obj in enumerate(content_objs):
         if words_trimmed >= stop_after_trimming:
-            if Realization.config['log_realization_changes'] == True:
+            if Realization.config['log_realization_changes']:
                 Realization.logger.info("new_content_objs: hit trimming limit. skip rest of method.")
             new_content_objs.append(content_obj)
             continue
@@ -303,7 +315,7 @@ def remove_redundant_sents(content_objs,max_length = 100):
     current_len = get_num_words_in_collection(content_objs)
     stop_after_trimming = current_len - max_length
     if stop_after_trimming < 0:
-        if Realization.config['log_realization_changes'] == True:
+        if Realization.config['log_realization_changes']:
             Realization.logger.info("remove_redundant_sents: already below word limit. skip method.")
         return content_objs
     words_trimmed = 0
@@ -321,12 +333,12 @@ def remove_redundant_sents(content_objs,max_length = 100):
                             and compare_obj not in removed:
                     removed.append(compare_obj)
                     words_trimmed += len(compare_obj.span.text.split())
-                    if Realization.config['log_realization_changes'] == True:
+                    if Realization.config['log_realization_changes']:
                         Realization.logger.info("Removing redundant sentence")
                         Realization.logger.info("Kept sentence: "+content_obj.span.text)
                         Realization.logger.info("Removed sentence: " + compare_obj.span.text)
     if words_trimmed >= stop_after_trimming:
-        if Realization.config['log_realization_changes'] == True:
+        if Realization.config['log_realization_changes']:
             Realization.logger.info("remove_redundant_sents: hit trimming limit. skip rest of method.")
     return [content for content in content_objs if content not in removed]
 
@@ -410,21 +422,21 @@ def filter_content_by_regex_list(content_objs,regex_list,max_length = 100):
     current_len = get_num_words_in_collection(content_objs)
     stop_after_trimming = current_len - max_length
     if stop_after_trimming < 0:
-        if Realization.config['log_realization_changes'] == True:
+        if Realization.config['log_realization_changes']:
             Realization.logger.info("filter_content_by_regex_list: already below word limit. skip method.")
         return content_objs
     words_trimmed = 0
     removed = []
     for i, content_obj in enumerate(content_objs):
         if words_trimmed >= stop_after_trimming:
-            if Realization.config['log_realization_changes'] == True:
+            if Realization.config['log_realization_changes']:
                 Realization.logger.info("filter_content_by_regex_list: hit trimming limit. skip rest of method.")
             break
         for regex in regex_list:
             if re.match(regex,content_obj.span.text) is not None:
                 removed.append(content_obj)
                 words_trimmed += len(compare_obj.span.text.split())
-                if Realization.config['log_realization_changes'] == True:
+                if Realization.config['log_realization_changes']:
                     Realization.logger.info("Removing sentence with matching regex: "+
                                             content_obj.span.text)
                 break
@@ -434,54 +446,47 @@ def remove_text_by_regex_list(content_objs,regex_list,max_length = 100):
     current_len = get_num_words_in_collection(content_objs)
     stop_after_trimming = current_len - max_length
     if stop_after_trimming < 0:
-        if Realization.config['log_realization_changes'] == True:
+        if Realization.config['log_realization_changes']:
             Realization.logger.info("remove_text_by_regex_list: already below word limit. skip method.")
         return content_objs
     words_trimmed = 0
     new_content_objs = []
     for i, content_obj in enumerate(content_objs):
         if words_trimmed >= stop_after_trimming:
-            if Realization.config['log_realization_changes'] == True:
+            if Realization.config['log_realization_changes']:
                 Realization.logger.info("remove_text_by_regex_list: hit trimming limit. skip rest of method.")
             new_content_objs.append(content_objs)
             continue
         for regex in regex_list:
             if re.search(regex,content_obj.realized_text) is not None:
                 new_text = re.sub(regex,"",content_obj.realized_text)
-                if Realization.config['log_realization_changes'] == True:
+                if Realization.config['log_realization_changes']:
                     Realization.logger.info("Changing text: -- " +
                                             content_obj.span.text+" -- to "+
                                             new_text)
                 content_obj.realized_text = new_text
         new_content_objs.append(content_obj)
     if words_trimmed >= stop_after_trimming:
-        if Realization.config['log_realization_changes'] == True:
+        if Realization.config['log_realization_changes']:
             Realization.logger.info("remove_text_by_regex_list: hit trimming limit. skip rest of method.")
     return new_content_objs
 
 def get_num_words_in_collection(content_objs):
-    words = 0
-    for i, content in enumerate(content_objs):
-        text_len = len(content.realized_text.split())
-        words+=text_len
-    return words
-
-
-def get_num_sentences_in_collection(content_objs):
-    return len(content_objs)
+    word_counts = [len(content.realized_text.split()) for content in content_objs]
+    return sum(word_counts)
 
 def remove_subjectless_sentences(content_objs,max_length=100):
     current_len = get_num_words_in_collection(content_objs)
     stop_after_trimming = current_len - max_length
     if stop_after_trimming < 0:
-        if Realization.config['log_realization_changes'] == True:
+        if Realization.config['log_realization_changes']:
             Realization.logger.info("remove_subjectless_sentences: already below word limit. skip method.")
         return content_objs
     words_trimmed = 0
     removed = []
     for i, content_obj in enumerate(content_objs):
         if words_trimmed >= stop_after_trimming:
-            if Realization.config['log_realization_changes'] == True:
+            if Realization.config['log_realization_changes']:
                 Realization.logger.info("remove_subjectless_sentences: hit trimming limit. skip rest of method.")
             break
         found_subj = False
@@ -491,7 +496,7 @@ def remove_subjectless_sentences(content_objs,max_length=100):
                 break
         if found_subj == False:
             removed.append(content_obj)
-            if Realization.config['log_realization_changes'] == True:
+            if Realization.config['log_realization_changes']:
                 Realization.logger.info("Removing sentence with no subject: "+
                                         content_obj.span.text)
     return [content for content in content_objs if content not in removed]

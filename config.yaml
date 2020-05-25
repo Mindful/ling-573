@@ -16,8 +16,8 @@ Selection:
     reweight_scheme: 'sumbasic'
     grouping: 'per_article'
     use_idf: 0
-    num_sents_per_article: 3
-    forward_backward: True
+    num_sents_per_article: 2
+    forward_backward: False
     length_limit: 4
     num_sents_per_glob: 1000
     unigram_weight: 0.2
@@ -40,4 +40,3 @@ Realization:
   remove_full_spans_that_match: [] #add regex patterns (in quotes) separated by commas. any spans containing regex will be filtered out
   remove_subspans_that_match: [] #add regex patterns (in quotes) separated by commas. Specific regex matches will be removed
   remove_subjectless_sentences: False #Set to True to filter out ungrammatical fragments (with no subjects)
-  stop_overtrim: False  #Set to True to maximize the use of our 100 word space
