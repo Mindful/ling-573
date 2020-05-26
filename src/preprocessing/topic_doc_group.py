@@ -3,6 +3,7 @@ import spacy
 from spacy.tokens import Doc, Span
 from . import clean_text
 from common import PipelineComponent, Globals
+import re
 
 ARTICLE_SENTENCE = 'article_sentence'
 ARTICLE_HEADLINE = 'article_headline'
@@ -24,13 +25,19 @@ def set_custom_boundaries(doc):
             token.is_sent_start = False
     return doc
 
+def contains_quote(span):
+    scare_quotes = re.match(r".*[A-Za-z]+ \"\w+( \w+)?( \w+)?\" [A-Za-z]+.*", span.text)
+    if scare_quotes:
+        return False
+    return "\"" in span.text
+
 
 class DocumentGroup(PipelineComponent):
     __slots__ = ['topic_id', 'narrative', 'title', 'articles']
 
     @staticmethod
     def setup():
-        Span.set_extension('contains_quote', getter=lambda span: "\"" in span.text)
+        Span.set_extension('contains_quote', getter=contains_quote)
         Span.set_extension('sent_index', default=-1)
         Span.set_extension('type', default=ARTICLE_SENTENCE)
         Doc.set_extension('paragraph_index', default=None)

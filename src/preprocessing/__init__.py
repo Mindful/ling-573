@@ -73,6 +73,7 @@ def clean_text(text, remove_quotes=False):
     text = re.sub(r'^\(Begin optional trim\)$', '', text)  # remove (Begin optional trim)
     text = re.sub(r'^\(Optional add end\)$', '', text)  # remove (Optional add end)
     text = re.sub(r'^\(STORY CAN END HERE. OPTIONAL MATERIAL FOLLOWS\)$', '', text)  # remove (Optional add end)
+    text = re.sub(r'^Here are today\'s top news stories.*$', '', text, flags=re.IGNORECASE)  # remove Here are today's top news stories
 
 
     # standarize quotation marks, i.e. `` -> "   and '' -> "
