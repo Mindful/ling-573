@@ -63,16 +63,17 @@ class Realization(PipelineComponent):
         if len(Realization.config['remove_full_spans_that_match']) > 0:
             cand_sents = filter_content_by_regex_list(cand_sents, Realization.config['remove_full_spans_that_match'])
 
-        unique_sents = remove_redundant_sents(cand_sents)
+        cand_sents = remove_stranded_colon_sents(cand_sents)
 
         ## trim_content_objs modifies the realized_text on each content object. span no longer reliable
-        unique_sents = trim_content_objs(unique_sents)
+        cand_sents = trim_content_objs(cand_sents)
         if Realization.config['remove_attributions']:
-            unique_sents = remove_attributions(unique_sents)
+            cand_sents = remove_attributions(cand_sents)
 
-        ## Now, apply any methods that act only on the realized text.
         if len(Realization.config['remove_subspans_that_match']) > 0:
-            unique_sents = remove_text_by_regex_list(unique_sents, Realization.config['remove_subspans_that_match'])
+            cand_sents = remove_text_by_regex_list(cand_sents, Realization.config['remove_subspans_that_match'])
+
+        unique_sents, overflow_sents = remove_redundant_sents(cand_sents)
 
         removed = []
         total_words = 0
@@ -84,11 +85,21 @@ class Realization(PipelineComponent):
                 total_words += text_len
             else:
                 removed.append(content)
+
         self.output_words = total_words
         return_content = [content for content in unique_sents if content not in removed]
         return_content = clean_up_objects(return_content)
-   
-        return return_content
+        return use_extra_quota_space(return_content, overflow_sents)
+
+
+def use_extra_quota_space(realized_sents, overflow_sents):
+    remaining_quota = WORD_QUOTA - get_num_words_in_collection(realized_sents)
+    will_fit = [sent for sent in overflow_sents
+                if len(sent.realized_text.split()) <= remaining_quota]
+
+    if len(will_fit) > 0:
+        return realized_sents + [sorted(will_fit, key=lambda x: x.score, reverse=True)[0]]
+    return realized_sents
 
 
 def remove_questions(content_objs):
@@ -140,6 +151,23 @@ def remove_quotes(content_objs):
             removed.append(content_obj)
             if Realization.config['log_realization_changes']:
                 Realization.logger.info("Removing sentence with quotation: {}".format(content_obj.span.text))
+    return [content for content in content_objs if content not in removed]
+
+
+def remove_stranded_colon_sents(content_objs):
+    current_len = get_num_words_in_collection(content_objs)
+    stop_after_trimming = current_len - WORD_QUOTA
+
+    if no_extra_remaining(stop_after_trimming, 'remove_quotes'):
+        return content_objs
+
+    words_trimmed = 0
+    removed = []
+    for content_obj in content_objs:
+        if words_trimmed >= stop_after_trimming:
+            break
+        if content_obj.span.text[-1] == ':':
+            removed.append(content_obj)
     return [content for content in content_objs if content not in removed]
 
 
@@ -250,13 +278,16 @@ def remove_sentence_initial_terms(sentence):
     finished = False
     while not finished:
         tag = sentence[0].tag_
-        if tag in ('CC','RB','RBS','RBR'):
+        text = sentence[0].text
+        exceptions = ('Now')
+
+        if tag in ('CC','RB','RBS','RBR') and text not in exceptions:
             sentence = sentence[1:]
             # Remove sentence-initial commas that might be there now
             if sentence[0].text == ',':
                 sentence = sentence[1:]
         else:
-            finished=True
+            finished = True
     return sentence
 
 def remove_appositives(sentence):
@@ -333,9 +364,11 @@ def remove_redundant_sents(content_objs,max_length = 100):
 
     words_trimmed = 0
     removed = []
+
     for content_obj in content_objs:
         if words_trimmed >= stop_after_trimming:
             break
+
         if content_obj not in removed:
             for compare_obj in content_objs:
                 if words_trimmed >= stop_after_trimming:
@@ -347,14 +380,13 @@ def remove_redundant_sents(content_objs,max_length = 100):
                                 and compare_obj not in removed:
                         removed.append(compare_obj)
                         words_trimmed += len(compare_obj.span.text.split())
+
                         if Realization.config['log_realization_changes']:
                             Realization.logger.info("Removing redundant sentence")
-                            Realization.logger.info("Kept sentence: "+content_obj.span.text)
+                            Realization.logger.info("Kept sentence: " + content_obj.span.text)
                             Realization.logger.info("Removed sentence: " + compare_obj.span.text)
-    if words_trimmed >= stop_after_trimming:
-        if Realization.config['log_realization_changes']:
-            Realization.logger.info("remove_redundant_sents: hit trimming limit. skip rest of method.")
-    return [content for content in content_objs if content not in removed]
+
+    return ([content for content in content_objs if content not in removed], removed)
 
 
 def is_redundant(sent_1, sent_2, similarity_metric='spacy', similarity_threshold=.97):
@@ -370,7 +402,7 @@ def is_redundant(sent_1, sent_2, similarity_metric='spacy', similarity_threshold
     s2 = [tok.text.lower() for tok in sent_2]
     union = list(set(s1) & set(s2))
 
-    if len(union) / len(s1) > 0.65:
+    if len(union) / len(s2) > 0.65:
         return True
 
     if similarity_metric=='spacy':
@@ -382,7 +414,7 @@ def is_redundant(sent_1, sent_2, similarity_metric='spacy', similarity_threshold
         sim = -1
     return sim > similarity_threshold
 
-def spacy_similarity(sent_1,sent_2):
+def spacy_similarity(sent_1, sent_2):
     if sent_1.has_vector and sent_2.has_vector:
         # current value (0.87) is chosen by manual inspection of ~20 sentence pairs
         # stripping down to lemmas and removing stop words did NOT seem to help i.e. nlp(" ".join([tok.lemma_ for tok in sent_1 if tok.text not in spacy_stopwords and not tok.is_punct]))
@@ -522,6 +554,7 @@ def remove_subjectless_sentences(content_objs,max_length=100):
                                         content_obj.span.text)
     return [content for content in content_objs if content not in removed]
 
+
 def remove_attributions(content_objs):
     current_len = get_num_words_in_collection(content_objs)
     stop_after_trimming = current_len - WORD_QUOTA
@@ -531,24 +564,35 @@ def remove_attributions(content_objs):
 
     words_trimmed = 0
     new_content_objs = []
+
     for content_obj in content_objs:
         if words_trimmed >= stop_after_trimming:
             new_content_objs.append(content_objs)
             continue
-        new_text = content_obj.realized_text
-        new_text = re.sub(r', [a-zA-Z]* said([!.])$',r'\1',new_text)
-        new_text = re.sub(r', said [a-zA-Z]*([!.])$',r'\1',new_text)
-        new_text = re.sub(r', [a-zA-Z]* reported([!.])$',r'\1',new_text)
-        new_text = re.sub(r', reported [a-zA-Z]*([!.])$',r'\1',new_text)
-        new_text = re.sub(r', [a-zA-Z]* reports([!.])$',r'\1',new_text)
-        new_text = re.sub(r', reports [a-zA-Z]*([!.])$',r'\1',new_text)
 
-        if new_text != content_obj.realized_text:
-                if Realization.config['log_realization_changes']:
-                    Realization.logger.info("removing attribution from -- " +
-                                            content_obj.realized_text + " -- new senteence: " +
-                                            new_text)
+        new_text = content_obj.realized_text
+        # sentence final
+        new_text = re.sub(r', citing [\s|a-zA-Z]+([!.])$', r'\1', new_text, flags=re.IGNORECASE)
+        new_text = re.sub(r', [a-zA-Z]* said([!.])$',r'\1', new_text)
+        new_text = re.sub(r', [a-zA-Z]*{1, 3} said([!.])$', r'\1', new_text)
+        new_text = re.sub(r', [a-zA-Z]* said today([!.])$', r'\1', new_text)
+        new_text = re.sub(r', said [a-zA-Z]*([!.])$', r'\1', new_text)
+        new_text = re.sub(r', [a-zA-Z]* press reported today([!.])$', r'\1', new_text)
+        new_text = re.sub(r', [a-zA-Z]* reported([!.])$', r'\1', new_text)
+        new_text = re.sub(r', [a-zA-Z]* reported today([!.])$', r'\1', new_text)
+        new_text = re.sub(r', reported [a-zA-Z]*([!.])$', r'\1', new_text)
+        new_text = re.sub(r', [a-zA-Z]* reports([!.])$', r'\1', new_text)
+        new_text = re.sub(r', reports [a-zA-Z]*([!.])$', r'\1', new_text)
+        new_text = re.sub(r', according to[\s|a-zA-Z]+([!.])$', r'\1', new_text, flags=re.IGNORECASE)
+
+        # mid-sentence
+        new_text = re.sub(r', (\w*\s+){1,2}said,', '', new_text)
+
+        if Realization.config['log_realization_changes'] and new_text != content_obj.realized_text:
+            Realization.logger.info("removing attribution from -- {} -- new sentence: {}".format(content_obj.realized_text, new_text))
+
         content_obj.realized_text = new_text
         new_content_objs.append(content_obj)
+
     return new_content_objs
 
