@@ -67,6 +67,7 @@ class Realization(PipelineComponent):
 
         ## trim_content_objs modifies the realized_text on each content object. span no longer reliable
         cand_sents = trim_content_objs(cand_sents)
+
         if Realization.config['remove_attributions']:
             cand_sents = remove_attributions(cand_sents)
 
@@ -89,17 +90,24 @@ class Realization(PipelineComponent):
         self.output_words = total_words
         return_content = [content for content in unique_sents if content not in removed]
         return_content = clean_up_objects(return_content)
-        return use_extra_quota_space(return_content, overflow_sents)
+        return_content = use_extra_quota_space(return_content, overflow_sents)
+        return return_content
 
 
 def use_extra_quota_space(realized_sents, overflow_sents):
+    sent_texts = [sent.realized_text for sent in realized_sents]
     remaining_quota = WORD_QUOTA - get_num_words_in_collection(realized_sents)
     will_fit = [sent for sent in overflow_sents
                 if len(sent.realized_text.split()) <= remaining_quota]
+    non_duplicates = filter_out_duplicates(sent_texts, will_fit)
 
-    if len(will_fit) > 0:
-        return realized_sents + [sorted(will_fit, key=lambda x: x.score, reverse=True)[0]]
+    if will_fit and non_duplicates:
+        return realized_sents + [sorted(non_duplicates, key=lambda x: x.score, reverse=True)[0]]
     return realized_sents
+
+
+def filter_out_duplicates(sent_texts, overflow_options):
+    return [sent for sent in overflow_options if sent.realized_text not in sent_texts]
 
 
 def remove_questions(content_objs):
@@ -114,8 +122,6 @@ def remove_questions(content_objs):
 
     for content_obj in content_objs:
         if words_trimmed >= stop_after_trimming:
-            if Realization.config['log_realization_changes']:
-                Realization.logger.info("remove_questions: hit trimming limit. skip rest of method.")
             break
         if re.match(".*\?.*",content_obj.span.text) is not None:
             removed.append(content_obj)
@@ -179,7 +185,7 @@ def trim_content_objs(content_objs):
         return content_objs
     words_trimmed = 0
     new_content_objs = []
-    for i, content_obj in enumerate(content_objs):
+    for content_obj in content_objs:
         if words_trimmed >= stop_after_trimming:
             if Realization.config['log_realization_changes']:
                 Realization.logger.info("new_content_objs: hit trimming limit. skip rest of method.")
@@ -218,7 +224,22 @@ def trim(sentence):
         sentence_text = remove_appositives(sentence)
     else:
         sentence_text = sentence.text
+
+    sentence_text = handle_double_dash(sentence_text)
+    sentence_text = handle_initial_punct(sentence_text)
     return sentence_text
+
+
+def handle_double_dash(text):
+    text = re.sub(r'\s+--\s+', r'--', text)
+    return re.sub(r'^-- ', '', text)
+
+
+def handle_initial_punct(text):
+    text = re.sub(r'^- ', r'', text)
+    text = re.sub(r'^; ', r'', text)
+    return re.sub(r'^A: ', '', text)
+
 
 def clean_up_objects(content_objs):
     new_content_objs = []
@@ -228,6 +249,7 @@ def clean_up_objects(content_objs):
         new_content_objs.append(content_obj)
     return new_content_objs
 
+
 def clean_up_sentence(sentence):
     '''
     ** Take care of little details to make sentence readable and grammatical after editing **
@@ -235,8 +257,7 @@ def clean_up_sentence(sentence):
     :return: string in printable form
     '''
     ret = set_initial_word_to_upper(sentence)
-    ret = remove_extra_spaces(ret)
-    return ret
+    return remove_extra_spaces(ret)
 
 def remove_extra_spaces(sentence):
     '''
@@ -244,9 +265,8 @@ def remove_extra_spaces(sentence):
     :param sentence: string
     :return: string
     '''
-    ret = re.sub("  +"," ",sentence)
-    ret = re.sub(" +([.?!,])","\g<1>",sentence)
-    return ret
+    ret = re.sub("  +"," ", sentence)
+    return re.sub(r" +([.?!,])","\g<1>", ret)
 
 
 def set_initial_word_to_upper(sentence):
@@ -262,8 +282,8 @@ def set_initial_word_to_upper(sentence):
         sentence = sentence
     sentence_list = sentence.split()
     sentence_list[0] = sentence_list[0].capitalize()
-    sentence = " ".join(sentence_list)
-    return sentence
+
+    return " ".join(sentence_list)
 
 
 def remove_sentence_initial_terms(sentence):
@@ -289,6 +309,7 @@ def remove_sentence_initial_terms(sentence):
         else:
             finished = True
     return sentence
+
 
 def remove_appositives(sentence):
     '''
@@ -373,6 +394,7 @@ def remove_redundant_sents(content_objs,max_length = 100):
             for compare_obj in content_objs:
                 if words_trimmed >= stop_after_trimming:
                     break
+
                 if not compare_obj is content_obj:
                     if is_redundant(content_obj.span, compare_obj.span,
                                 similarity_metric=similarity_metric,
@@ -398,11 +420,11 @@ def is_redundant(sent_1, sent_2, similarity_metric='spacy', similarity_threshold
     :param similarity_threshold: what % similarity is the cutoff for redundancy
     :return: True/False for redundant/not redundant
     '''
-    s1 = [tok.text.lower() for tok in sent_1]
-    s2 = [tok.text.lower() for tok in sent_2]
-    union = list(set(s1) & set(s2))
+    sent_1_tokens = [tok.text.lower() for tok in sent_1]
+    sent_2_tokens = [tok.text.lower() for tok in sent_2]
+    token_overlap = list(set(sent_1_tokens) & set(sent_2_tokens))
 
-    if len(union) / len(s2) > 0.65:
+    if len(token_overlap) / len(sent_2_tokens) > 0.69:
         return True
 
     if similarity_metric=='spacy':
@@ -524,9 +546,11 @@ def remove_text_by_regex_list(content_objs,regex_list,max_length = 100):
             Realization.logger.info("remove_text_by_regex_list: hit trimming limit. skip rest of method.")
     return new_content_objs
 
+
 def get_num_words_in_collection(content_objs):
     word_counts = [len(content.realized_text.split()) for content in content_objs]
     return sum(word_counts)
+
 
 def remove_subjectless_sentences(content_objs,max_length=100):
     current_len = get_num_words_in_collection(content_objs)
