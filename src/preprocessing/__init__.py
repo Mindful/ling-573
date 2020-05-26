@@ -63,6 +63,7 @@ def clean_text(text, remove_quotes=False):
     text = re.sub(r'^\.+$', '', text)  # remove empty ... lines, e.g. "." or "..."
     text = re.sub(r'[A-Z|a-z]*-[A-Z|a-z]*-[A-Z|a-z]*-[A-Z|a-z]*\s+', '', text)  # remove Bc-fla-lafave-deal 
     text = re.sub(r'\( \) --', '', text)  # remove ( ) --
+    text = re.sub(r'\s+_\s+', '', text)  # remove stranded underscores
 
 
     # news things
