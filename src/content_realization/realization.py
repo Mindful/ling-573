@@ -67,6 +67,8 @@ class Realization(PipelineComponent):
 
         ## trim_content_objs modifies the realized_text on each content object. span no longer reliable
         unique_sents = trim_content_objs(unique_sents)
+        if Realization.config['remove_attributions']:
+            unique_sents = remove_attributions(unique_sents)
 
         ## Now, apply any methods that act only on the realized text.
         if len(Realization.config['remove_subspans_that_match']) > 0:
@@ -182,9 +184,13 @@ def trim(sentence):
     ## lines that mention the publication source ('for use by clients of the NY times service')
     ## sentences that are too short / too long (should probably be in selection).
     #####################################################
-    sentence = remove_sentence_initial_terms(sentence)
-    sentence = remove_appositives(sentence)
-    return sentence
+    if Realization.config['remove_sentence_initial_terms']:
+        sentence = remove_sentence_initial_terms(sentence)
+    if Realization.config['remove_appositives']:
+        sentence_text = remove_appositives(sentence)
+    else:
+        sentence_text = sentence.text
+    return sentence_text
 
 def clean_up_objects(content_objs):
     new_content_objs = []
@@ -264,8 +270,15 @@ def remove_appositives(sentence):
     for i in range(0,len(sentence)):
         if sentence[i].dep_ == 'appos':
             indices_to_remove.add(sentence[i].i)
-            for c in sentence[i].children:
-                indices_to_remove.add(c.i)
+    # get all children of all appositives
+    appositive_indices = list(indices_to_remove)
+    while len(appositive_indices) !=0:
+        ind = appositive_indices[0]
+        tok = sentence.doc[ind]
+        for c in tok.children:
+            appositive_indices.append(c.i)
+            indices_to_remove.add(c.i)
+        appositive_indices.pop(0)
 
     spans_to_remove = [] #list of tuples (start, end) of spans to remove
     for i in indices_to_remove:
@@ -453,7 +466,7 @@ def filter_content_by_regex_list(content_objs,regex_list,max_length = 100):
 def remove_text_by_regex_list(content_objs,regex_list,max_length = 100):
     current_len = get_num_words_in_collection(content_objs)
     stop_after_trimming = current_len - max_length
-    
+
     if no_extra_remaining(stop_after_trimming, 'remove_text_by_regex_list'):
         return content_objs
 
@@ -509,4 +522,33 @@ def remove_subjectless_sentences(content_objs,max_length=100):
                                         content_obj.span.text)
     return [content for content in content_objs if content not in removed]
 
+def remove_attributions(content_objs):
+    current_len = get_num_words_in_collection(content_objs)
+    stop_after_trimming = current_len - WORD_QUOTA
+
+    if no_extra_remaining(stop_after_trimming, 'remove_text_by_regex_list'):
+        return content_objs
+
+    words_trimmed = 0
+    new_content_objs = []
+    for content_obj in content_objs:
+        if words_trimmed >= stop_after_trimming:
+            new_content_objs.append(content_objs)
+            continue
+        new_text = content_obj.realized_text
+        new_text = re.sub(r', [a-zA-Z]* said([!.])$',r'\1',new_text)
+        new_text = re.sub(r', said [a-zA-Z]*([!.])$',r'\1',new_text)
+        new_text = re.sub(r', [a-zA-Z]* reported([!.])$',r'\1',new_text)
+        new_text = re.sub(r', reported [a-zA-Z]*([!.])$',r'\1',new_text)
+        new_text = re.sub(r', [a-zA-Z]* reports([!.])$',r'\1',new_text)
+        new_text = re.sub(r', reports [a-zA-Z]*([!.])$',r'\1',new_text)
+
+        if new_text != content_obj.realized_text:
+                if Realization.config['log_realization_changes']:
+                    Realization.logger.info("removing attribution from -- " +
+                                            content_obj.realized_text + " -- new senteence: " +
+                                            new_text)
+        content_obj.realized_text = new_text
+        new_content_objs.append(content_obj)
+    return new_content_objs
 

@@ -40,3 +40,6 @@ Realization:
   remove_full_spans_that_match: [] #add regex patterns (in quotes) separated by commas. any spans containing regex will be filtered out
   remove_subspans_that_match: [] #add regex patterns (in quotes) separated by commas. Specific regex matches will be removed
   remove_subjectless_sentences: False #Set to True to filter out ungrammatical fragments (with no subjects)
+  remove_sentence_initial_terms: True
+  remove_appositives: True
+  remove_attributions: True
