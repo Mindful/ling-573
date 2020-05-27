@@ -63,7 +63,6 @@ class Realization(PipelineComponent):
         if len(Realization.config['remove_full_spans_that_match']) > 0:
             cand_sents = filter_content_by_regex_list(cand_sents, Realization.config['remove_full_spans_that_match'])
 
-        cand_sents = remove_stranded_colon_sents(cand_sents)
         cand_sents = remove_fragments(cand_sents)
 
         ## trim_content_objs modifies the realized_text on each content object. span no longer reliable
@@ -120,10 +119,25 @@ def filter_out_duplicates(sent_texts, overflow_options):
 
 
 def remove_questions(content_objs):
+    is_question = lambda content_obj: re.match(r".*\?.*", content_obj.span.text) is not None
+    return removal_step(is_question, content_objs, 'remove_questions')
+
+
+def remove_quotes(content_objs):
+    is_quote = lambda content_obj: content_obj.span._.contains_quote
+    return removal_step(is_quote, content_objs, 'remove_questions')
+
+
+def remove_fragments(content_objs):
+    is_frag = lambda content_obj: content_obj.span.text[-1] != '.' and content_obj.span.text[-1] != ';'
+    return removal_step(is_frag, content_objs, 'remove_questions')
+
+
+def removal_step(removal_function, content_objs, label):
     current_len = get_num_words_in_collection(content_objs)
     stop_after_trimming = current_len - WORD_QUOTA
 
-    if no_extra_remaining(stop_after_trimming, 'remove_questions'):
+    if no_extra_remaining(stop_after_trimming, label):
         return content_objs
 
     words_trimmed = 0
@@ -132,10 +146,9 @@ def remove_questions(content_objs):
     for content_obj in content_objs:
         if words_trimmed >= stop_after_trimming:
             break
-        if re.match(".*\?.*",content_obj.span.text) is not None:
+        if removal_function(content_obj):
             removed.append(content_obj)
-            if Realization.config['log_realization_changes']:
-                Realization.logger.info("Removing sentence with question: {}".format(content_obj.span.text))
+            words_trimmed += len(content_obj.span.text.split())
 
     return [content for content in content_objs if content not in removed]
 
@@ -146,62 +159,6 @@ def no_extra_remaining(trimming_quota, category):
             Realization.logger.info('{}: already hit trimming limit. skip method.'.format(category))
         return True
     return False
-
-
-def remove_quotes(content_objs):
-    current_len = get_num_words_in_collection(content_objs)
-    stop_after_trimming = current_len - WORD_QUOTA
-
-    if no_extra_remaining(stop_after_trimming, 'remove_quotes'):
-        return content_objs
-
-    words_trimmed = 0
-    removed = []
-    for content_obj in content_objs:
-        if words_trimmed >= stop_after_trimming:
-            if Realization.config['log_realization_changes']:
-                Realization.logger.info("remove_quotes: hit trimming limit. skip rest of method.")
-            break
-        if content_obj.span._.contains_quote:
-            removed.append(content_obj)
-            if Realization.config['log_realization_changes']:
-                Realization.logger.info("Removing sentence with quotation: {}".format(content_obj.span.text))
-
-    return [content for content in content_objs if content not in removed]
-
-
-def remove_stranded_colon_sents(content_objs):
-    current_len = get_num_words_in_collection(content_objs)
-    stop_after_trimming = current_len - WORD_QUOTA
-
-    if no_extra_remaining(stop_after_trimming, 'remove_quotes'):
-        return content_objs
-
-    words_trimmed = 0
-    removed = []
-    for content_obj in content_objs:
-        if words_trimmed >= stop_after_trimming:
-            break
-        if content_obj.span.text[-1] == ':':
-            removed.append(content_obj)
-    return [content for content in content_objs if content not in removed]
-
-
-def remove_fragments(content_objs):
-    current_len = get_num_words_in_collection(content_objs)
-    stop_after_trimming = current_len - WORD_QUOTA
-
-    if no_extra_remaining(stop_after_trimming, 'remove_quotes'):
-        return content_objs
-
-    words_trimmed = 0
-    removed = []
-    for content_obj in content_objs:
-        if words_trimmed >= stop_after_trimming:
-            break
-        if content_obj.span.text[-1] != '.' and content_obj.span.text[-1] != ';':
-            removed.append(content_obj)
-    return [content for content in content_objs if content not in removed]
 
 
 def trim_content_objs(content_objs):
