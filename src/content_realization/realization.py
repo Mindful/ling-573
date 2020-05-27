@@ -91,8 +91,12 @@ class Realization(PipelineComponent):
         self.output_words = total_words
         return_content = [content for content in unique_sents if content not in removed]
         return_content = clean_up_objects(return_content)
-        return_content = use_extra_quota_space(return_content, overflow_sents, selection_object.selected_content)
-        return return_content
+        return use_extra_quota_space(return_content, overflow_sents, selection_object.selected_content)
+
+
+def get_num_words_in_collection(content_objs):
+    word_counts = [len(content.realized_text.split()) for content in content_objs]
+    return sum(word_counts)
 
 
 def use_extra_quota_space(realized_sents, overflow_sents, starting_sents):
@@ -206,6 +210,7 @@ def trim_content_objs(content_objs):
 
     if no_extra_remaining(stop_after_trimming, 'trim_content_objs'):
         return content_objs
+
     words_trimmed = 0
     new_content_objs = []
     for content_obj in content_objs:
@@ -266,9 +271,8 @@ def handle_initial_punct(text):
 
 def clean_up_objects(content_objs):
     new_content_objs = []
-    for i, content_obj in enumerate(content_objs):
-        new_text = clean_up_sentence(content_obj.realized_text)
-        content_obj.realized_text = new_text
+    for content_obj in content_objs:
+        content_obj.realized_text = clean_up_sentence(content_obj.realized_text)
         new_content_objs.append(content_obj)
     return new_content_objs
 
@@ -281,6 +285,7 @@ def clean_up_sentence(sentence):
     '''
     ret = set_initial_word_to_upper(sentence)
     return remove_extra_spaces(ret)
+
 
 def remove_extra_spaces(sentence):
     '''
@@ -447,26 +452,20 @@ def is_redundant(sent_1, sent_2, similarity_metric='spacy', similarity_threshold
     sent_2_tokens = [tok.text.lower() for tok in sent_2]
     token_overlap = list(set(sent_1_tokens) & set(sent_2_tokens))
 
-    if len(token_overlap) / len(sent_2_tokens) > 0.72:
+    if len(token_overlap) / len(sent_2_tokens) > 0.81:
         return True
 
-    if similarity_metric=='spacy':
-        sim = spacy_similarity(sent_1, sent_2)
-    elif similarity_metric=='bert':
+    if similarity_metric=='bert':
         sim = bert_similarity(sent_1, sent_2)
     else:
-        #invalid metric string. Give warning?
-        sim = -1
+        sim = spacy_similarity(sent_1, sent_2)
     return sim > similarity_threshold
+
 
 def spacy_similarity(sent_1, sent_2):
     if sent_1.has_vector and sent_2.has_vector:
-        # current value (0.87) is chosen by manual inspection of ~20 sentence pairs
-        # stripping down to lemmas and removing stop words did NOT seem to help i.e. nlp(" ".join([tok.lemma_ for tok in sent_1 if tok.text not in spacy_stopwords and not tok.is_punct]))
-        # might consider adding comparison of doc.ents or doc.noun_chunk overlap
-        # this threshold value likely needs to be tuned based on specific content selection strategy
         return sent_1.similarity(sent_2)
-    return -1
+    return False
 
 
 def bert_similarity(sent_1, sent_2):
@@ -485,34 +484,6 @@ def bert_similarity(sent_1, sent_2):
     paraphrase_classification_logits = Realization.model(**possible_paraphrase)[0]
     paraphrase_results = torch.softmax(paraphrase_classification_logits, dim=1).tolist()[0][1] #[1] is the class for "is paraphrase"
     return paraphrase_results
-
-
-def get_max_embedded_similarity(sent_1, sent_2):
-    '''
-    ** Given two spacy spans, get similarity of sentence 2 to all subspans of sentence 1 **
-    :param sent_1: spaCy span
-    :param sent_2: spaCy span
-    :return: max similarity score
-    '''
-    l1 = len(sent_1)
-    l2 = len(sent_2)
-    if l1 < l2:
-        short_sent = sent_1
-        long_sent = sent_2
-    else:
-        short_sent = sent_2
-        long_sent = sent_1
-    short_sent_len = min(l1,l2)
-    long_sent_len = max(l1,l2)
-    max_similarity = 0
-    for i in range(0,long_sent_len-short_sent_len):
-        comparison_span = long_sent[i:i+short_sent_len]
-        if not (short_sent.has_vector and comparison_span.has_vector):
-            continue
-        sim = short_sent.similarity(comparison_span)
-        if sim > max_similarity:
-            max_similarity = sim
-    return max_similarity
 
 
 def filter_content_by_regex_list(content_objs,regex_list,max_length = 100):
@@ -570,11 +541,6 @@ def remove_text_by_regex_list(content_objs,regex_list,max_length = 100):
     return new_content_objs
 
 
-def get_num_words_in_collection(content_objs):
-    word_counts = [len(content.realized_text.split()) for content in content_objs]
-    return sum(word_counts)
-
-
 def remove_subjectless_sentences(content_objs,max_length=100):
     current_len = get_num_words_in_collection(content_objs)
     stop_after_trimming = current_len - max_length
@@ -619,18 +585,18 @@ def remove_attributions(content_objs):
 
         new_text = content_obj.realized_text
         # sentence final
-        new_text = re.sub(r', citing [\s|a-zA-Z]+([!.])$', r'\1', new_text, flags=re.IGNORECASE)
-        new_text = re.sub(r', [a-zA-Z]* said([!.])$', r'\1', new_text)
-        new_text = re.sub(r', [a-zA-Z]*\s([a-zA-Z]*\s)?([a-zA-Z]*\s)?said[!.]$', r'\1', new_text)
-        new_text = re.sub(r', [a-zA-Z]* said today([!.])$', r'\1', new_text)
-        new_text = re.sub(r', said [a-zA-Z]*([!.])$', r'\1', new_text)
-        new_text = re.sub(r', [a-zA-Z]* press reported today([!.])$', r'\1', new_text)
-        new_text = re.sub(r', [a-zA-Z]* reported([!.])$', r'\1', new_text)
-        new_text = re.sub(r', [a-zA-Z]* reported today([!.])$', r'\1', new_text)
-        new_text = re.sub(r', reported [a-zA-Z]*([!.])$', r'\1', new_text)
-        new_text = re.sub(r', [a-zA-Z]* reports([!.])$', r'\1', new_text)
-        new_text = re.sub(r', reports [a-zA-Z]*([!.])$', r'\1', new_text)
-        new_text = re.sub(r', according to[\s|a-zA-Z]+([!.])$', r'\1', new_text, flags=re.IGNORECASE)
+        new_text = re.sub(r', citing [\s|a-zA-Z]+\.$', '.', new_text, flags=re.IGNORECASE)
+        new_text = re.sub(r', [a-zA-Z]* said\.$', '.', new_text)
+        new_text = re.sub(r', [a-zA-Z]*\s([a-zA-Z]*\s)?([a-zA-Z]*\s)?said\.$', '.', new_text)
+        new_text = re.sub(r', [a-zA-Z]* said today\.$', '.', new_text)
+        new_text = re.sub(r', said [a-zA-Z]*\.$', '.', new_text)
+        new_text = re.sub(r', [a-zA-Z]* press reported today\.$', '.', new_text)
+        new_text = re.sub(r', [a-zA-Z]* reported\.$', '.', new_text)
+        new_text = re.sub(r', [a-zA-Z]* reported today\.$', '.', new_text)
+        new_text = re.sub(r', reported [a-zA-Z]*\.$', '.', new_text)
+        new_text = re.sub(r', [a-zA-Z]* reports\.$', '.', new_text)
+        new_text = re.sub(r', reports [a-zA-Z]*\.$', '.', new_text)
+        new_text = re.sub(r', according to[\s|a-zA-Z]+\.$', '.', new_text, flags=re.IGNORECASE)
 
         # mid-sentence
         new_text = re.sub(r', (\w*\s+){1,2}said,', '', new_text)
