@@ -20,7 +20,14 @@ def is_countworthy_token(token):
 
 
 def clean_text(text, remove_quotes=False):
+    # * remove spurious line breaks and tabs
+    text = re.sub('\s+\\n', ' ', text)
+    text = re.sub(r'\t', ' ', text)
+    text = re.sub('(\S+)\\n', r'\1 ', text)
+    text = re.sub('\s+', ' ', text)
+
     # taglines, websites, etc.
+    text = re.sub(r'.*top news stories.*$', '', text, flags=re.IGNORECASE)  # remove Here are today's top news stories
     text = re.sub(r'^\s*on the net.*$', '', text, flags=re.IGNORECASE) # remove 'on the net' and everything following
     text = re.sub(r'.{0,50}e-?mail address is.{0,100}', '', text, flags=re.IGNORECASE)  # remove email line e.g. Bob Keefe's e-mail address is bkeefecoxnews.com
     text = re.sub(r'^\s*e-?mail.{0,100}', '', text, flags=re.IGNORECASE)  # remove email and following up to 100 chars, e.g. E-mail: triggp(at)nytimes.com.
@@ -77,7 +84,6 @@ def clean_text(text, remove_quotes=False):
     text = re.sub(r'^\(Begin optional trim\)$', '', text)  # remove (Begin optional trim)
     text = re.sub(r'^\(Optional add end\)$', '', text)  # remove (Optional add end)
     text = re.sub(r'^\(STORY CAN END HERE. OPTIONAL MATERIAL FOLLOWS\)$', '', text)  # remove (Optional add end)
-    text = re.sub(r'^Here are today\'s top news stories.*$', '', text, flags=re.IGNORECASE)  # remove Here are today's top news stories
 
     # senticizing issue stop-gaps
     text = re.sub(r'[\w]* Not Otherwise Specified', 'not otherwise specified', text)  # remove Here are today's top news stories
@@ -97,12 +103,12 @@ def clean_text(text, remove_quotes=False):
         text = re.sub(r"\s'([A-Z|a-z])", r" \1", text)
         text = re.sub(r"([A-Z|a-z])'\s", r"\1 ", text)
 
+
     # * remove spurious line breaks and tabs
     text = re.sub('\s+\\n', ' ', text)
     text = re.sub(r'\t', ' ', text)
     text = re.sub('(\S+)\\n', r'\1 ', text)
     text = re.sub('\s+', ' ', text)
-
 
     return text.strip()
 

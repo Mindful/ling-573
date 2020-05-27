@@ -86,7 +86,6 @@ class Realization(PipelineComponent):
             if total_words + sent_word_count <= WORD_QUOTA:
                 unique_in_range_sents.append(sent)
                 total_words += sent_word_count
-
         return use_extra_quota_space(unique_in_range_sents, overflow_sents, selection_object.selected_content)
 
 
@@ -101,7 +100,7 @@ def content_obj_word_count(content_obj):
 
 def remove_under_min_length(content_objs, min_length):
     under_min_length = lambda x: content_obj_word_count(x) <= min_length
-    return removal_step(under_min_length, content_objs, 'remove_questions')
+    return removal_step(under_min_length, content_objs, 'remove_under_min_length')
 
 
 def remove_questions(content_objs):
@@ -111,12 +110,12 @@ def remove_questions(content_objs):
 
 def remove_quotes(content_objs):
     is_quote = lambda x: x.span._.contains_quote
-    return removal_step(is_quote, content_objs, 'remove_questions')
+    return removal_step(is_quote, content_objs, 'remove_quotes')
 
 
 def remove_fragments(content_objs):
     is_frag = lambda x: x.realized_text[-1] != '.' and x.realized_text[-1] != ';'
-    return removal_step(is_frag, content_objs, 'remove_questions')
+    return removal_step(is_frag, content_objs, 'remove_fragments')
 
 
 def removal_step(removal_function, content_objs, label):
@@ -243,17 +242,12 @@ def remove_extra_spaces(sentence):
 def set_initial_word_to_upper(sentence):
     '''
     ** given a sentence, make sure the first word is uppercase **
-    :param sentence: a spaCy span or string
+    :param sentence: string
     :return: a string
     TODO: can I change a token to uppercase while leaving a spaCy span intact?
     '''
-    try:
-        sentence = sentence.text
-    except:
-        sentence = sentence
     sentence_list = sentence.split()
     sentence_list[0] = sentence_list[0].capitalize()
-
     return " ".join(sentence_list)
 
 
@@ -344,13 +338,13 @@ def remove_appositives(sentence):
     return output
 
 
-def remove_redundant_sents(content_objs,max_length = 100):
+def remove_redundant_sents(content_objs):
     # will want to factor in weights to determine which sentence to remove, once weights are available
-    similarity_metric = Realization.config['similarity_metric']
-    similarity_threshold = Realization.config['similarity_threshold']
-
+    sim_metric = Realization.config['similarity_metric']
+    sim_threshold = Realization.config['similarity_threshold']
     current_len = get_num_words_in_collection(content_objs)
-    stop_after_trimming = current_len - max_length
+    stop_after_trimming = current_len - WORD_QUOTA
+
     if no_extra_remaining(stop_after_trimming, 'remove_redundant_sents'):
         return content_objs
 
@@ -367,12 +361,9 @@ def remove_redundant_sents(content_objs,max_length = 100):
                     break
 
                 if not compare_obj is content_obj:
-                    if is_redundant(content_obj.span, compare_obj.span,
-                                similarity_metric=similarity_metric,
-                                similarity_threshold=similarity_threshold) \
-                                and compare_obj not in removed:
+                    if is_redundant(content_obj, compare_obj, sim_metric, sim_threshold) and compare_obj not in removed:
                         removed.append(compare_obj)
-                        words_trimmed += len(compare_obj.span.text.split())
+                        words_trimmed += content_obj_word_count(compare_obj)
 
                         if Realization.config['log_realization_changes']:
                             Realization.logger.info("Removing redundant sentence")
@@ -391,17 +382,17 @@ def is_redundant(sent_1, sent_2, similarity_metric='spacy', similarity_threshold
     :param similarity_threshold: what % similarity is the cutoff for redundancy
     :return: True/False for redundant/not redundant
     '''
-    sent_1_tokens = [tok.text.lower() for tok in sent_1]
-    sent_2_tokens = [tok.text.lower() for tok in sent_2]
+    sent_1_tokens = [tok.lower() for tok in sent_1.realized_text.split()]
+    sent_2_tokens = [tok.lower() for tok in sent_2.realized_text.split()]
     token_overlap = list(set(sent_1_tokens) & set(sent_2_tokens))
 
-    if len(token_overlap) / len(sent_2_tokens) > 0.81:
+    if len(token_overlap) / len(sent_2_tokens) > 0.74:
         return True
 
     if similarity_metric=='bert':
-        sim = bert_similarity(sent_1, sent_2)
+        sim = bert_similarity(sent_1.span, sent_2.span)
     else:
-        sim = spacy_similarity(sent_1, sent_2)
+        sim = spacy_similarity(sent_1.span, sent_2.span)
     return sim > similarity_threshold
 
 
@@ -446,7 +437,7 @@ def filter_content_by_regex_list(content_objs,regex_list,max_length = 100):
         for regex in regex_list:
             if re.match(regex,content_obj.span.text) is not None:
                 removed.append(content_obj)
-                words_trimmed += len(compare_obj.span.text.split())
+                words_trimmed += content_obj_word_count(content_obj)
                 if Realization.config['log_realization_changes']:
                     Realization.logger.info("Removing sentence with matching regex: "+
                                             content_obj.span.text)
@@ -512,45 +503,32 @@ def remove_subjectless_sentences(content_objs,max_length=100):
 
 
 def remove_attributions(content_objs):
-    current_len = get_num_words_in_collection(content_objs)
-    stop_after_trimming = current_len - WORD_QUOTA
+    return [remove_attribution(content) for content in content_objs]
 
-    if no_extra_remaining(stop_after_trimming, 'remove_text_by_regex_list'):
-        return content_objs
 
-    words_trimmed = 0
-    new_content_objs = []
+def remove_attribution(content_obj):
+    text = content_obj.realized_text
+    # sentence final
+    text = re.sub(r', citing [\s|a-zA-Z]+\.$', '.', text, flags=re.IGNORECASE)
+    text = re.sub(r', [a-zA-Z]* said\.$', '.', text)
+    text = re.sub(r', [a-zA-Z]*\s([a-zA-Z]*\s)?([a-zA-Z]*\s)?said\.$', '.', text)
+    text = re.sub(r', [a-zA-Z]* said today\.$', '.', text)
+    text = re.sub(r', said [a-zA-Z]*\.$', '.', text)
+    text = re.sub(r', [a-zA-Z]* press reported today\.$', '.', text)
+    text = re.sub(r', [a-zA-Z]* reported\.$', '.', text)
+    text = re.sub(r', [a-zA-Z]* reported today\.$', '.', text)
+    text = re.sub(r', reported [a-zA-Z]*\.$', '.', text)
+    text = re.sub(r', [a-zA-Z]* reports\.$', '.', text)
+    text = re.sub(r', reports [a-zA-Z]*\.$', '.', text)
+    text = re.sub(r', according to[\s|a-zA-Z]+\.$', '.', text, flags=re.IGNORECASE)
+    # mid-sentence
+    text = re.sub(r', (\w*\s+){1,2}said,', '', text)
 
-    for content_obj in content_objs:
-        if words_trimmed >= stop_after_trimming:
-            new_content_objs.append(content_objs)
-            continue
+    if Realization.config['log_realization_changes'] and text != content_obj.realized_text:
+        Realization.logger.info("removing attribution from -- {} -- new sentence: {}".format(content_obj.realized_text, text))
 
-        new_text = content_obj.realized_text
-        # sentence final
-        new_text = re.sub(r', citing [\s|a-zA-Z]+\.$', '.', new_text, flags=re.IGNORECASE)
-        new_text = re.sub(r', [a-zA-Z]* said\.$', '.', new_text)
-        new_text = re.sub(r', [a-zA-Z]*\s([a-zA-Z]*\s)?([a-zA-Z]*\s)?said\.$', '.', new_text)
-        new_text = re.sub(r', [a-zA-Z]* said today\.$', '.', new_text)
-        new_text = re.sub(r', said [a-zA-Z]*\.$', '.', new_text)
-        new_text = re.sub(r', [a-zA-Z]* press reported today\.$', '.', new_text)
-        new_text = re.sub(r', [a-zA-Z]* reported\.$', '.', new_text)
-        new_text = re.sub(r', [a-zA-Z]* reported today\.$', '.', new_text)
-        new_text = re.sub(r', reported [a-zA-Z]*\.$', '.', new_text)
-        new_text = re.sub(r', [a-zA-Z]* reports\.$', '.', new_text)
-        new_text = re.sub(r', reports [a-zA-Z]*\.$', '.', new_text)
-        new_text = re.sub(r', according to[\s|a-zA-Z]+\.$', '.', new_text, flags=re.IGNORECASE)
-
-        # mid-sentence
-        new_text = re.sub(r', (\w*\s+){1,2}said,', '', new_text)
-
-        if Realization.config['log_realization_changes'] and new_text != content_obj.realized_text:
-            Realization.logger.info("removing attribution from -- {} -- new sentence: {}".format(content_obj.realized_text, new_text))
-
-        content_obj.realized_text = new_text
-        new_content_objs.append(content_obj)
-
-    return new_content_objs
+    content_obj.realized_text = text
+    return content_obj
 
 
 def use_extra_quota_space(realized_sents, overflow_sents, starting_sents):
@@ -565,8 +543,7 @@ def use_extra_quota_space(realized_sents, overflow_sents, starting_sents):
 
 
 def will_fit_sents(sents, remaining_quota):
-    return [sent for sent in sents
-            if len(sent.realized_text.split()) <= remaining_quota]
+    return [sent for sent in sents if content_obj_word_count(sent) <= remaining_quota]
 
 
 def filter_out_duplicates(sent_texts, overflow_options):
