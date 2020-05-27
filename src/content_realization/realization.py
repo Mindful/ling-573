@@ -35,14 +35,14 @@ class Realization(PipelineComponent):
             Realization.logger.info("\tOutput Text: {}".format(content_object.realized_text))
 
         initial_word_count = get_num_words_in_collection(self.selected_content.selected_content)
-        Realization.logger.info("\tNarrowed from {} words to {} words".format(initial_word_count, self.output_words))
+        Realization.logger.info("\tNarrowed from {} words to {} words".format(initial_word_count, get_num_words_in_collection(self.realized_content)))
         Realization.logger.info("\tNarrowed from {} sentences to {} sentences".format(len(self.selected_content.selected_content), len(self.realized_content)))
 
 
     def dump_selected_content(self):
         for content_object in self.selected_content.selected_content:
-            Realization.logger.info("article id: " + str(content_object.article.id))
-            Realization.logger.info("span: " + str(content_object.span))
+            Realization.logger.info("article id: {}".format(content_object.article.id))
+            Realization.logger.info("span: {}".format(content_object.span))
 
 
     def narrow_content(self, selection_object):
@@ -75,61 +75,47 @@ class Realization(PipelineComponent):
             cand_sents = remove_text_by_regex_list(cand_sents, Realization.config['remove_subspans_that_match'])
 
         unique_sents, overflow_sents = remove_redundant_sents(cand_sents)
+        unique_sents = remove_under_min_length(unique_sents, Realization.config['minimum_sentence_length'])
+        unique_sents = clean_up_objects(unique_sents)
 
-        removed = []
         total_words = 0
+        unique_in_range_sents = []
 
-        for content in unique_sents:
-            remaining_words = WORD_QUOTA - total_words
-            text_len = len(content.realized_text.split())
-            if text_len <= remaining_words and text_len > Realization.config['minimum_sentence_length']:
-                total_words += text_len
-            else:
-                removed.append(content)
+        for sent in unique_sents:
+            sent_word_count = content_obj_word_count(sent)
+            if total_words + sent_word_count <= WORD_QUOTA:
+                unique_in_range_sents.append(sent)
+                total_words += sent_word_count
 
-        self.output_words = total_words
-        return_content = [content for content in unique_sents if content not in removed]
-        return_content = clean_up_objects(return_content)
-        return use_extra_quota_space(return_content, overflow_sents, selection_object.selected_content)
+        return use_extra_quota_space(unique_in_range_sents, overflow_sents, selection_object.selected_content)
 
 
 def get_num_words_in_collection(content_objs):
-    word_counts = [len(content.realized_text.split()) for content in content_objs]
+    word_counts = [content_obj_word_count(content)for content in content_objs]
     return sum(word_counts)
 
 
-def use_extra_quota_space(realized_sents, overflow_sents, starting_sents):
-    sent_texts = [sent.realized_text for sent in realized_sents]
-    remaining_quota = WORD_QUOTA - get_num_words_in_collection(realized_sents)
-    will_fit = will_fit_sents(overflow_sents, remaining_quota)
-    will_fit_non_duplicates = filter_out_duplicates(sent_texts, will_fit)
-
-    if will_fit_non_duplicates:
-        return realized_sents + [sorted(will_fit_non_duplicates, key=lambda x: x.score, reverse=True)[0]]
-    return realized_sents
+def content_obj_word_count(content_obj):
+    return len(content_obj.realized_text.split())
 
 
-def will_fit_sents(sents, remaining_quota):
-    return [sent for sent in sents
-            if len(sent.realized_text.split()) <= remaining_quota]
-
-
-def filter_out_duplicates(sent_texts, overflow_options):
-    return [sent for sent in overflow_options if sent.realized_text not in sent_texts]
+def remove_under_min_length(content_objs, min_length):
+    under_min_length = lambda x: content_obj_word_count(x) <= min_length
+    return removal_step(under_min_length, content_objs, 'remove_questions')
 
 
 def remove_questions(content_objs):
-    is_question = lambda content_obj: re.match(r".*\?.*", content_obj.span.text) is not None
+    is_question = lambda x: re.match(r".*\?.*", x.realized_text) is not None
     return removal_step(is_question, content_objs, 'remove_questions')
 
 
 def remove_quotes(content_objs):
-    is_quote = lambda content_obj: content_obj.span._.contains_quote
+    is_quote = lambda x: x.span._.contains_quote
     return removal_step(is_quote, content_objs, 'remove_questions')
 
 
 def remove_fragments(content_objs):
-    is_frag = lambda content_obj: content_obj.span.text[-1] != '.' and content_obj.span.text[-1] != ';'
+    is_frag = lambda x: x.realized_text[-1] != '.' and x.realized_text[-1] != ';'
     return removal_step(is_frag, content_objs, 'remove_questions')
 
 
@@ -148,7 +134,7 @@ def removal_step(removal_function, content_objs, label):
             break
         if removal_function(content_obj):
             removed.append(content_obj)
-            words_trimmed += len(content_obj.span.text.split())
+            words_trimmed += content_obj_word_count(content_obj)
 
     return [content for content in content_objs if content not in removed]
 
@@ -240,8 +226,8 @@ def clean_up_sentence(sentence):
     :param sentence: string, the sentence for the summary
     :return: string in printable form
     '''
-    ret = set_initial_word_to_upper(sentence)
-    return remove_extra_spaces(ret)
+    text = set_initial_word_to_upper(sentence)
+    return remove_extra_spaces(text)
 
 
 def remove_extra_spaces(sentence):
@@ -250,8 +236,8 @@ def remove_extra_spaces(sentence):
     :param sentence: string
     :return: string
     '''
-    ret = re.sub("  +"," ", sentence)
-    return re.sub(r" +([.?!,])","\g<1>", ret)
+    text = re.sub("  +", " ", sentence)
+    return re.sub(r" +([.?!,])", "\g<1>", text)
 
 
 def set_initial_word_to_upper(sentence):
@@ -452,7 +438,7 @@ def filter_content_by_regex_list(content_objs,regex_list,max_length = 100):
 
     words_trimmed = 0
     removed = []
-    for i, content_obj in enumerate(content_objs):
+    for content_obj in content_objs:
         if words_trimmed >= stop_after_trimming:
             if Realization.config['log_realization_changes']:
                 Realization.logger.info("filter_content_by_regex_list: hit trimming limit. skip rest of method.")
@@ -477,7 +463,7 @@ def remove_text_by_regex_list(content_objs,regex_list,max_length = 100):
 
     words_trimmed = 0
     new_content_objs = []
-    for i, content_obj in enumerate(content_objs):
+    for content_obj in content_objs:
         if words_trimmed >= stop_after_trimming:
             if Realization.config['log_realization_changes']:
                 Realization.logger.info("remove_text_by_regex_list: hit trimming limit. skip rest of method.")
@@ -507,7 +493,7 @@ def remove_subjectless_sentences(content_objs,max_length=100):
         return content_objs
     words_trimmed = 0
     removed = []
-    for i, content_obj in enumerate(content_objs):
+    for content_obj in content_objs:
         if words_trimmed >= stop_after_trimming:
             if Realization.config['log_realization_changes']:
                 Realization.logger.info("remove_subjectless_sentences: hit trimming limit. skip rest of method.")
@@ -566,3 +552,22 @@ def remove_attributions(content_objs):
 
     return new_content_objs
 
+
+def use_extra_quota_space(realized_sents, overflow_sents, starting_sents):
+    sent_texts = [sent.realized_text for sent in realized_sents]
+    remaining_quota = WORD_QUOTA - get_num_words_in_collection(realized_sents)
+    will_fit = will_fit_sents(overflow_sents, remaining_quota)
+    will_fit_non_duplicates = filter_out_duplicates(sent_texts, will_fit)
+
+    if will_fit_non_duplicates:
+        return realized_sents + [sorted(will_fit_non_duplicates, key=lambda x: x.score, reverse=True)[0]]
+    return realized_sents
+
+
+def will_fit_sents(sents, remaining_quota):
+    return [sent for sent in sents
+            if len(sent.realized_text.split()) <= remaining_quota]
+
+
+def filter_out_duplicates(sent_texts, overflow_options):
+    return [sent for sent in overflow_options if sent.realized_text not in sent_texts]
