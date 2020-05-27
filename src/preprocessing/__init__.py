@@ -36,12 +36,14 @@ def clean_text(text, remove_quotes=False):
     text = re.sub(r"^\s*With photo\s*(\w+\s*){0,5}\.?", "", text, flags=re.IGNORECASE) # remove With photo 
     text = re.sub(r'^\s*With photo.', '', text, flags=re.IGNORECASE)  # remove With photo.
     text = re.sub(r'^https?://\S*$', '', text) # remove urls
-    text = re.sub(r'^www.{4,100}$', '', text) # remove urls II
+    text = re.sub(r'www.{4,100}$', '', text) # remove urls II
+    text = re.sub(r'https?://www.{4,100}$', '', text) # remove urls III, e.g. http://www.fs.fed.us/gpnf/mshnvm/
     text = re.sub(r'^\s*[A-Z|\-|\s]{2,50} \(Undated\)\s*', '', text) # remove e.g. BKN-PREVIEW-WEST (Undated)
     text = re.sub(r"\s+\.\s+\.\s+\.", ".", text) # remove . . . 
     text = re.sub(r"\(\s*\)", "", text) # remove ( )
     text = re.sub(r"^\s*(SOURCES:)+\s*(\w+\s*){0,6},?\sstaff reporting.?", "", text, flags=re.IGNORECASE) # remove staff reporting, e.g. Epa chesapeake bay program, staff reporting
     text = re.sub(r",?\sstaff reporting.?", "", text, flags=re.IGNORECASE) # remove staff reporting not at beginning of sentence
+    text = re.sub(r'^By [\w+] ([\w+])? ([\w+])?.$', '', text, flags=re.IGNORECASE)  # remove by lines, e.g. By Sam Howe Verhovek.
 
 
     # remove (or convert?) the location parenthetical that begins most articles, e.g. "LITTLETON, Colo. (AP) --"
@@ -53,6 +55,8 @@ def clean_text(text, remove_quotes=False):
     text = re.sub(r'^\s*_+', '', text) # remove starting underscore, e.g. "_ The protocol obliges industrialized "
     text = re.sub(r'^[A-Z]{2,}[A-Z |\w|,|\.]*_', '', text) # remove location and underscore, e.g. "NEW YORK _", but don't remove "The letter _ seen by The Associated Press _ said senior leaders"
     text = re.sub(r'^[A-Z]{0,50} --', '', text) # remove loc, e.g. ATLANTA --
+    text = re.sub(r'^\([A-Za-z]{0,50}\)--', '', text) # remove loc, e.g. (tampa)--
+    text = re.sub(r'.{0,10}\(JP\):\s?', '', text) # remove Jakarta (JP): 
 
     # total junk, no idea
     text = re.sub(r'^\s*\(?[A-Za-z]{2}\/[A-Za-z0-9]{2,4}\)?$', '', text) # remove e.g. po/pi04, em/ea04, (lc/ml)
@@ -75,6 +79,10 @@ def clean_text(text, remove_quotes=False):
     text = re.sub(r'^\(STORY CAN END HERE. OPTIONAL MATERIAL FOLLOWS\)$', '', text)  # remove (Optional add end)
     text = re.sub(r'^Here are today\'s top news stories.*$', '', text, flags=re.IGNORECASE)  # remove Here are today's top news stories
 
+    # senticizing issue stop-gaps
+    text = re.sub(r'[\w]* Not Otherwise Specified', 'not otherwise specified', text)  # remove Here are today's top news stories
+    text = re.sub(r'([\w]*)\s?\([A-Z]{2,4}\)\s?', r",\1 ", text)  # remove all caps parenthetical abbreviations
+
 
     # standarize quotation marks, i.e. `` -> "   and '' -> "
     text = re.sub("([^`])`([^`])", r"\1'\2", text) # deal with opening nested quotes, e.g. ``Having exercised that right, they cannot then say, `We're police officers, therefore what we did was OK,''' he said.
@@ -82,12 +90,12 @@ def clean_text(text, remove_quotes=False):
     text = re.sub("``", '"', text)  # ``It's like a... 
     text = re.sub("''", '"', text)  #  ...like a prison in there,'' said Jessica Miller, 15.
     text = re.sub(r',\s([\"|\'])\s', r",\1 ", text)
+    text = re.sub(r'\!\"( \w+)', r'!", \1 ', text)
 
     if remove_quotes:
         text = re.sub("\"", '', text)
         text = re.sub(r"\s'([A-Z|a-z])", r" \1", text)
         text = re.sub(r"([A-Z|a-z])'\s", r"\1 ", text)
-
 
     # * remove spurious line breaks and tabs
     text = re.sub('\s+\\n', ' ', text)

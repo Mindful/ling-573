@@ -15,13 +15,15 @@ def set_custom_boundaries(doc):
     Prevent sentence segmentation from splitting a quotation
     '''
     in_progress_quote = False
-    for token in doc:
+    for i, token in enumerate(doc):
         if ("\"" in token.text) and (not in_progress_quote):
             in_progress_quote = True
         elif ("\"" in token.text) and in_progress_quote:
             in_progress_quote = False
             token.is_sent_start = False
         elif in_progress_quote:
+            token.is_sent_start = False
+        elif i != 0 and doc[i - 1].text not in ("\"", ".", ";", "!", "-", "--"):
             token.is_sent_start = False
     return doc
 

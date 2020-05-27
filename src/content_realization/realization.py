@@ -64,6 +64,7 @@ class Realization(PipelineComponent):
             cand_sents = filter_content_by_regex_list(cand_sents, Realization.config['remove_full_spans_that_match'])
 
         cand_sents = remove_stranded_colon_sents(cand_sents)
+        cand_sents = remove_fragments(cand_sents)
 
         ## trim_content_objs modifies the realized_text on each content object. span no longer reliable
         cand_sents = trim_content_objs(cand_sents)
@@ -90,20 +91,24 @@ class Realization(PipelineComponent):
         self.output_words = total_words
         return_content = [content for content in unique_sents if content not in removed]
         return_content = clean_up_objects(return_content)
-        return_content = use_extra_quota_space(return_content, overflow_sents)
+        return_content = use_extra_quota_space(return_content, overflow_sents, selection_object.selected_content)
         return return_content
 
 
-def use_extra_quota_space(realized_sents, overflow_sents):
+def use_extra_quota_space(realized_sents, overflow_sents, starting_sents):
     sent_texts = [sent.realized_text for sent in realized_sents]
     remaining_quota = WORD_QUOTA - get_num_words_in_collection(realized_sents)
-    will_fit = [sent for sent in overflow_sents
-                if len(sent.realized_text.split()) <= remaining_quota]
-    non_duplicates = filter_out_duplicates(sent_texts, will_fit)
+    will_fit = will_fit_sents(overflow_sents, remaining_quota)
+    will_fit_non_duplicates = filter_out_duplicates(sent_texts, will_fit)
 
-    if will_fit and non_duplicates:
-        return realized_sents + [sorted(non_duplicates, key=lambda x: x.score, reverse=True)[0]]
+    if will_fit_non_duplicates:
+        return realized_sents + [sorted(will_fit_non_duplicates, key=lambda x: x.score, reverse=True)[0]]
     return realized_sents
+
+
+def will_fit_sents(sents, remaining_quota):
+    return [sent for sent in sents
+            if len(sent.realized_text.split()) <= remaining_quota]
 
 
 def filter_out_duplicates(sent_texts, overflow_options):
@@ -157,6 +162,7 @@ def remove_quotes(content_objs):
             removed.append(content_obj)
             if Realization.config['log_realization_changes']:
                 Realization.logger.info("Removing sentence with quotation: {}".format(content_obj.span.text))
+
     return [content for content in content_objs if content not in removed]
 
 
@@ -173,6 +179,23 @@ def remove_stranded_colon_sents(content_objs):
         if words_trimmed >= stop_after_trimming:
             break
         if content_obj.span.text[-1] == ':':
+            removed.append(content_obj)
+    return [content for content in content_objs if content not in removed]
+
+
+def remove_fragments(content_objs):
+    current_len = get_num_words_in_collection(content_objs)
+    stop_after_trimming = current_len - WORD_QUOTA
+
+    if no_extra_remaining(stop_after_trimming, 'remove_quotes'):
+        return content_objs
+
+    words_trimmed = 0
+    removed = []
+    for content_obj in content_objs:
+        if words_trimmed >= stop_after_trimming:
+            break
+        if content_obj.span.text[-1] != '.' and content_obj.span.text[-1] != ';':
             removed.append(content_obj)
     return [content for content in content_objs if content not in removed]
 
@@ -424,7 +447,7 @@ def is_redundant(sent_1, sent_2, similarity_metric='spacy', similarity_threshold
     sent_2_tokens = [tok.text.lower() for tok in sent_2]
     token_overlap = list(set(sent_1_tokens) & set(sent_2_tokens))
 
-    if len(token_overlap) / len(sent_2_tokens) > 0.69:
+    if len(token_overlap) / len(sent_2_tokens) > 0.72:
         return True
 
     if similarity_metric=='spacy':
@@ -597,8 +620,8 @@ def remove_attributions(content_objs):
         new_text = content_obj.realized_text
         # sentence final
         new_text = re.sub(r', citing [\s|a-zA-Z]+([!.])$', r'\1', new_text, flags=re.IGNORECASE)
-        new_text = re.sub(r', [a-zA-Z]* said([!.])$',r'\1', new_text)
-        new_text = re.sub(r', [a-zA-Z]*{1, 3} said([!.])$', r'\1', new_text)
+        new_text = re.sub(r', [a-zA-Z]* said([!.])$', r'\1', new_text)
+        new_text = re.sub(r', [a-zA-Z]*\s([a-zA-Z]*\s)?([a-zA-Z]*\s)?said[!.]$', r'\1', new_text)
         new_text = re.sub(r', [a-zA-Z]* said today([!.])$', r'\1', new_text)
         new_text = re.sub(r', said [a-zA-Z]*([!.])$', r'\1', new_text)
         new_text = re.sub(r', [a-zA-Z]* press reported today([!.])$', r'\1', new_text)
