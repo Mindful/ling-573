@@ -1,6 +1,6 @@
 import pickle
 from data.article import ArticleQuery, Article
-from data.corpora import Aquaint, Aquaint2
+from data.corpora import Aquaint, Aquaint2, Gigaword
 from data.topic import Topic, read_topics_file
 from progress.bar import Bar
 from common import ROOT_DIR, Globals
@@ -19,7 +19,7 @@ def configure_local(directory):
     for name, location in Globals.datasets.items():
         Globals.datasets[name] = os.path.join(directory, os.path.basename(location))
 
-    Globals.corpora = [Aquaint(directory), Aquaint2(directory)]
+    Globals.corpora = [Aquaint(directory), Aquaint2(directory), Gigaword(directory)]
 
 
 def _compute_queries_by_file(topic_datas):

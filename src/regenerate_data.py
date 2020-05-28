@@ -3,7 +3,6 @@ import glob
 import sys
 from data import DATA_DIR, get_dataset_topics, configure_local, get_dataset_pickle_location
 from common import Globals
-from data.corpora import Aquaint, Aquaint2
 
 '''
 Cleans out the data/ directory and regenerates the results there. Must either be passed a local directory including 

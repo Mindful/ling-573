@@ -2,7 +2,7 @@ import os
 import logging
 import spacy
 
-from data.corpora import Aquaint, Aquaint2
+from data.corpora import Aquaint, Aquaint2, Gigaword
 
 import yaml
 
@@ -17,12 +17,14 @@ NLP = None
 
 DEV_TEST = 'dev_test'
 TRAIN = 'train'
+EVAL = 'eval'
 
 class Globals:
-    corpora = [Aquaint(), Aquaint2()]
+    corpora = [Aquaint(), Aquaint2(), Gigaword()]
     datasets = {
         DEV_TEST: '/dropbox/19-20/573/Data/Documents/devtest/GuidedSumm10_test_topics.xml',
-        TRAIN: '/dropbox/19-20/573/Data/Documents/training/2009/UpdateSumm09_test_topics.xml'
+        TRAIN: '/dropbox/19-20/573/Data/Documents/training/2009/UpdateSumm09_test_topics.xml',
+        EVAL: '/dropbox/19-20/573/Data/Documents/evaltest/GuidedSumm11_test_topics.xml'
     }
 
     nlp = None

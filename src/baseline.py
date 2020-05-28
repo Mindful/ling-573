@@ -9,7 +9,8 @@ from shutil import copyfile
 
 def main():
     # topics = get_dataset_topics(TRAIN)
-    topics = get_dataset_topics(DEV_TEST)
+    # topics = get_dataset_topics(DEV_TEST)
+    topics = get_dataset_topics(EVAL)
 
     pipeline_classes = [
         DocumentGroup,
