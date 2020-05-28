@@ -20,8 +20,8 @@ Selection:
     forward_backward: False
     length_limit: 4
     num_sents_per_glob: 1000
-    unigram_weight: .2
-    bigram_weight: .9
+    unigram_weight: 0.2
+    bigram_weight: 0.9
     trigram_weight: 0.00
     headline_weight: 0.0
     group_headline_weight: 0.0
@@ -32,7 +32,7 @@ Ordering:
   use_bert: False
 Realization:
   similarity_metric: 'spacy'
-  similarity_threshold: .97
+  similarity_threshold: 0.97
   remove_quotes: True
   remove_questions: True
   minimum_sentence_length: 4 # this is # of tokens that a sentence requires AFTER being subjected to regex, etc

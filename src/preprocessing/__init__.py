@@ -87,7 +87,7 @@ def clean_text(text, remove_quotes=False):
 
     # senticizing issue stop-gaps
     text = re.sub(r'[\w]* Not Otherwise Specified', 'not otherwise specified', text)  # remove Here are today's top news stories
-    text = re.sub(r'([\w]*)\s?\([A-Z]{2,4}\)\s?', r",\1 ", text)  # remove all caps parenthetical abbreviations
+    text = re.sub(r'([\w]*)\s?\([A-Z]{2,4}\)\s?', r"\1 ", text)  # remove all caps parenthetical abbreviations
 
 
     # standarize quotation marks, i.e. `` -> "   and '' -> "

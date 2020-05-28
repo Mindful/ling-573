@@ -255,7 +255,7 @@ def remove_sentence_initial_terms(sentence):
     while not finished:
         tag = sentence[0].tag_
         text = sentence[0].text
-        exceptions = ('Now')
+        exceptions = ('Now', 'Soon', 'Most')
 
         if tag in ('CC','RB','RBS','RBR') and text not in exceptions:
             sentence = sentence[1:]
@@ -372,11 +372,7 @@ def is_redundant(sent_1, sent_2, similarity_metric='spacy', similarity_threshold
     :param similarity_threshold: what % similarity is the cutoff for redundancy
     :return: True/False for redundant/not redundant
     '''
-    sent_1_tokens = [tok.lower() for tok in sent_1.realized_text.split()]
-    sent_2_tokens = [tok.lower() for tok in sent_2.realized_text.split()]
-    token_overlap = list(set(sent_1_tokens) & set(sent_2_tokens))
-
-    if len(token_overlap) / len(sent_2_tokens) > 0.74:
+    if redundant_lexical_overlap(sent_1, sent_2, 0.74):
         return True
 
     if similarity_metric=='bert':
@@ -384,6 +380,16 @@ def is_redundant(sent_1, sent_2, similarity_metric='spacy', similarity_threshold
     else:
         sim = spacy_similarity(sent_1.span, sent_2.span)
     return sim > similarity_threshold
+
+
+def redundant_lexical_overlap(sent_1, sent_2, threshold):
+    sent_1_tokens = [tok.lower() for tok in re.split(" |-", sent_1.realized_text[:-1])]
+    sent_2_tokens = [tok.lower() for tok in re.split(" |-", sent_2.realized_text[:-1])]
+    token_overlap = list(set(sent_1_tokens) & set(sent_2_tokens))
+
+    if len(token_overlap) / len(sent_2_tokens) > threshold:
+        return True
+    return False
 
 
 def spacy_similarity(sent_1, sent_2):
@@ -513,10 +519,9 @@ def remove_attribution(content_obj):
 
 
 def use_extra_quota_space(realized_sents, overflow_sents, starting_sents):
-    sent_texts = [sent.realized_text for sent in realized_sents]
     remaining_quota = WORD_QUOTA - get_num_words_in_collection(realized_sents)
     will_fit = will_fit_sents(overflow_sents, remaining_quota)
-    will_fit_non_duplicates = filter_out_duplicates(sent_texts, will_fit)
+    will_fit_non_duplicates = filter_out_duplicates(realized_sents, will_fit)
 
     if will_fit_non_duplicates:
         return realized_sents + [sorted(will_fit_non_duplicates, key=lambda x: x.score, reverse=True)[0]]
@@ -528,7 +533,13 @@ def will_fit_sents(sents, remaining_quota):
 
 
 def filter_out_duplicates(sent_texts, overflow_options):
-    return [sent for sent in overflow_options if sent.realized_text not in sent_texts]
+    return [overflow_sent for overflow_sent in overflow_options
+            if not is_duplicate(overflow_sent, sent_texts)]
+
+
+def is_duplicate(overflow, sents):
+    return any([redundant_lexical_overlap(sent, overflow, 0.84) for sent in sents])
+
 
 def remove_sentences_starting_with_pronouns_removal_funct(content_obj):
     w1 = content_obj.span[0].text.lower()
