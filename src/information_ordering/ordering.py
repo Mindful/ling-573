@@ -66,18 +66,22 @@ class Ordering(PipelineComponent):
 
         for i, sentence in enumerate(sentences):
             score = sentence.score * 100
+
             if sentence.span._.sent_index in (0, -1):
-                score += 1
+                score += 15
+
+            score -= unlikely_first_word_penalty(sentence)
             date_penalty = (sentence.article.date - earliest_date).days * 0.1
             score -= date_penalty
             score += np.sum(succession_probs[i])
+            score += calculate_length_score(sentence)
             scores.append((score, sentence))
 
         return sorted(scores, key=itemgetter(0))[-1][1]
 
 
     def select_next_sentence(self, current_sent, current_index, remaining_sents, succession_probs, 
-                             topical_weight=0.1, succession_weight=0.3, chrono_weight=0.3):
+                             topical_weight=0.1, succession_weight=0.3, chrono_weight=0.7):
         '''
         Determine next best sentence candidate from weighted experts for chronology, topicality, and succession
         '''
@@ -142,3 +146,18 @@ class Ordering(PipelineComponent):
         if current_sent_idx < candidate_sent_idx:
             return max(20 - 0.2 * (candidate_sent_idx - current_sent_idx), 15)
         return 5 / (current_sent_idx - candidate_sent_idx) + 10
+
+
+def unlikely_first_word_penalty(sentence):
+    unlikely_start_words = ("He", "She", "It", "They", "That", "Those", "Some", "Since")
+    somewhat_unlikely_start_words = ("The")
+
+    if sentence.realized_text.split()[0] in unlikely_start_words:
+        return 10
+    elif sentence.realized_text.split()[0] in somewhat_unlikely_start_words:
+        return 5
+    return 0
+
+
+def calculate_length_score(sentence):
+    return len(sentence.realized_text.split()) * 0.22
