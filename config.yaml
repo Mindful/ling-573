@@ -20,10 +20,11 @@ Selection:
     forward_backward: False
     length_limit: 4
     num_sents_per_glob: 1000
-    unigram_weight: 0.2
-    bigram_weight: 0.9
+    unigram_weight: .2
+    bigram_weight: .9
     trigram_weight: 0.00
     headline_weight: 0.0
+    group_headline_weight: 0.0
     cartesian_weight: 0.0
     query_weight: 0.00
     bias_weight: 0.0 # bias
@@ -31,9 +32,7 @@ Ordering:
   use_bert: False
 Realization:
   similarity_metric: 'spacy'
-  similarity_threshold: 0.97
-  log_realization_changes: False
-  dump_selected_content: False #another logging "feature". dump all of the spans (with article IDs) exactly as they are in selected content
+  similarity_threshold: .97
   remove_quotes: True
   remove_questions: True
   minimum_sentence_length: 4 # this is # of tokens that a sentence requires AFTER being subjected to regex, etc
@@ -43,3 +42,4 @@ Realization:
   remove_sentence_initial_terms: True
   remove_appositives: False
   remove_attributions: True
+  remove_sentences_starting_with_pronouns: True

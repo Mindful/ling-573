@@ -21,28 +21,18 @@ class Realization(PipelineComponent):
         self.input_words = get_num_words_in_collection(self.selected_content.selected_content)
         self.realized_content = self.narrow_content(selection_object)
 
-        if Realization.config['dump_selected_content']:
-            self.dump_selected_content()
-
-        if Realization.config['log_realization_changes']:
-            self.log_realization_changes()
+        self.log_realization_changes()
 
 
     def log_realization_changes(self):
         for content_object in self.realized_content:
-            Realization.logger.info("Article ID: {}".format(content_object.article.id))
-            Realization.logger.info("\tInput Text: {}".format(content_object.span.text))
-            Realization.logger.info("\tOutput Text: {}".format(content_object.realized_text))
+            Realization.logger.debug("Article ID: {}".format(content_object.article.id))
+            Realization.logger.debug("\tInput Text: {}".format(content_object.span.text))
+            Realization.logger.debug("\tOutput Text: {}".format(content_object.realized_text))
 
         initial_word_count = get_num_words_in_collection(self.selected_content.selected_content)
-        Realization.logger.info("\tNarrowed from {} words to {} words".format(initial_word_count, get_num_words_in_collection(self.realized_content)))
-        Realization.logger.info("\tNarrowed from {} sentences to {} sentences".format(len(self.selected_content.selected_content), len(self.realized_content)))
-
-
-    def dump_selected_content(self):
-        for content_object in self.selected_content.selected_content:
-            Realization.logger.info("article id: {}".format(content_object.article.id))
-            Realization.logger.info("span: {}".format(content_object.span))
+        Realization.logger.debug("\tNarrowed from {} words to {} words".format(initial_word_count, get_num_words_in_collection(self.realized_content)))
+        Realization.logger.debug("\tNarrowed from {} sentences to {} sentences".format(len(self.selected_content.selected_content), len(self.realized_content)))
 
 
     def narrow_content(self, selection_object):
@@ -58,6 +48,8 @@ class Realization(PipelineComponent):
             cand_sents = remove_quotes(cand_sents)
         if Realization.config['remove_questions']:
             cand_sents = remove_questions(cand_sents)
+        if Realization.config['remove_sentences_starting_with_pronouns']:
+            cand_sents = remove_sentences_starting_with_pronouns(cand_sents)
         if Realization.config['remove_subjectless_sentences']:
             cand_sents = remove_subjectless_sentences(cand_sents)
         if len(Realization.config['remove_full_spans_that_match']) > 0:
@@ -134,14 +126,14 @@ def removal_step(removal_function, content_objs, label):
         if removal_function(content_obj):
             removed.append(content_obj)
             words_trimmed += content_obj_word_count(content_obj)
+            Realization.logger.debug('{}: removing sentence: {}.'.format(label, content_obj.realized_text))
 
     return [content for content in content_objs if content not in removed]
 
 
 def no_extra_remaining(trimming_quota, category):
     if trimming_quota <= 0:
-        if Realization.config['log_realization_changes']:
-            Realization.logger.info('{}: already hit trimming limit. skip method.'.format(category))
+        Realization.logger.debug('{}: already hit trimming limit. skip method.'.format(category))
         return True
     return False
 
@@ -157,8 +149,7 @@ def trim_content_objs(content_objs):
     new_content_objs = []
     for content_obj in content_objs:
         if words_trimmed >= stop_after_trimming:
-            if Realization.config['log_realization_changes']:
-                Realization.logger.info("new_content_objs: hit trimming limit. skip rest of method.")
+            Realization.logger.debug("new_content_objs: hit trimming limit. skip rest of method.")
             new_content_objs.append(content_obj)
             continue
         new_text = trim(content_obj.span)
@@ -346,7 +337,7 @@ def remove_redundant_sents(content_objs):
     stop_after_trimming = current_len - WORD_QUOTA
 
     if no_extra_remaining(stop_after_trimming, 'remove_redundant_sents'):
-        return content_objs
+        return (content_objs, [])
 
     words_trimmed = 0
     removed = []
@@ -365,10 +356,9 @@ def remove_redundant_sents(content_objs):
                         removed.append(compare_obj)
                         words_trimmed += content_obj_word_count(compare_obj)
 
-                        if Realization.config['log_realization_changes']:
-                            Realization.logger.info("Removing redundant sentence")
-                            Realization.logger.info("Kept sentence: " + content_obj.span.text)
-                            Realization.logger.info("Removed sentence: " + compare_obj.span.text)
+                        Realization.logger.debug("Removing redundant sentence")
+                        Realization.logger.debug("Kept sentence: " + content_obj.span.text)
+                        Realization.logger.debug("Removed sentence: " + compare_obj.span.text)
 
     return ([content for content in content_objs if content not in removed], removed)
 
@@ -431,16 +421,13 @@ def filter_content_by_regex_list(content_objs,regex_list,max_length = 100):
     removed = []
     for content_obj in content_objs:
         if words_trimmed >= stop_after_trimming:
-            if Realization.config['log_realization_changes']:
-                Realization.logger.info("filter_content_by_regex_list: hit trimming limit. skip rest of method.")
+            Realization.logger.debug("filter_content_by_regex_list: hit trimming limit. skip rest of method.")
             break
         for regex in regex_list:
             if re.match(regex,content_obj.span.text) is not None:
                 removed.append(content_obj)
                 words_trimmed += content_obj_word_count(content_obj)
-                if Realization.config['log_realization_changes']:
-                    Realization.logger.info("Removing sentence with matching regex: "+
-                                            content_obj.span.text)
+                Realization.logger.debug("Removing sentence with matching regex: "+ content_obj.span.text)
                 break
     return [content for content in content_objs if content not in removed]
 
@@ -456,22 +443,19 @@ def remove_text_by_regex_list(content_objs,regex_list,max_length = 100):
     new_content_objs = []
     for content_obj in content_objs:
         if words_trimmed >= stop_after_trimming:
-            if Realization.config['log_realization_changes']:
-                Realization.logger.info("remove_text_by_regex_list: hit trimming limit. skip rest of method.")
+            Realization.logger.debug("remove_text_by_regex_list: hit trimming limit. skip rest of method.")
             new_content_objs.append(content_objs)
             continue
         for regex in regex_list:
             if re.search(regex,content_obj.realized_text) is not None:
                 new_text = re.sub(regex,"",content_obj.realized_text)
-                if Realization.config['log_realization_changes']:
-                    Realization.logger.info("Changing text: -- " +
-                                            content_obj.span.text+" -- to "+
-                                            new_text)
+                Realization.logger.debug("Changing text: -- " +
+                                        content_obj.span.text+" -- to "+
+                                        new_text)
                 content_obj.realized_text = new_text
         new_content_objs.append(content_obj)
     if words_trimmed >= stop_after_trimming:
-        if Realization.config['log_realization_changes']:
-            Realization.logger.info("remove_text_by_regex_list: hit trimming limit. skip rest of method.")
+        Realization.logger.debug("remove_text_by_regex_list: hit trimming limit. skip rest of method.")
     return new_content_objs
 
 
@@ -479,15 +463,13 @@ def remove_subjectless_sentences(content_objs,max_length=100):
     current_len = get_num_words_in_collection(content_objs)
     stop_after_trimming = current_len - max_length
     if stop_after_trimming <= 0:
-        if Realization.config['log_realization_changes']:
-            Realization.logger.info("remove_subjectless_sentences: already below word limit. skip method.")
+        Realization.logger.debug("remove_subjectless_sentences: already below word limit. skip method.")
         return content_objs
     words_trimmed = 0
     removed = []
     for content_obj in content_objs:
         if words_trimmed >= stop_after_trimming:
-            if Realization.config['log_realization_changes']:
-                Realization.logger.info("remove_subjectless_sentences: hit trimming limit. skip rest of method.")
+            Realization.logger.debug("remove_subjectless_sentences: hit trimming limit. skip rest of method.")
             break
         found_subj = False
         for tok in content_obj.span:
@@ -496,8 +478,7 @@ def remove_subjectless_sentences(content_objs,max_length=100):
                 break
         if found_subj == False:
             removed.append(content_obj)
-            if Realization.config['log_realization_changes']:
-                Realization.logger.info("Removing sentence with no subject: "+
+            Realization.logger.debug("Removing sentence with no subject: "+
                                         content_obj.span.text)
     return [content for content in content_objs if content not in removed]
 
@@ -524,8 +505,8 @@ def remove_attribution(content_obj):
     # mid-sentence
     text = re.sub(r', (\w*\s+){1,2}said,', '', text)
 
-    if Realization.config['log_realization_changes'] and text != content_obj.realized_text:
-        Realization.logger.info("removing attribution from -- {} -- new sentence: {}".format(content_obj.realized_text, text))
+    if  text != content_obj.realized_text:
+        Realization.logger.debug("removing attribution from -- {} -- new sentence: {}".format(content_obj.realized_text, text))
 
     content_obj.realized_text = text
     return content_obj
@@ -548,3 +529,38 @@ def will_fit_sents(sents, remaining_quota):
 
 def filter_out_duplicates(sent_texts, overflow_options):
     return [sent for sent in overflow_options if sent.realized_text not in sent_texts]
+
+def remove_sentences_starting_with_pronouns_removal_funct(content_obj):
+    w1 = content_obj.span[0].text.lower()
+    w2 = content_obj.span[1].text.lower()
+
+    #Below, a list of exceptions that should be left in
+    if (w1 == "there" and w2 == "are") or \
+            (w1 == "there" and w2 == "'re") or \
+            (w1 == "there" and w2 == "is") or \
+            (w1 == "there" and w2 == "'s") or \
+            (w1 == "it" and w2 == "is") or \
+            (w1 == "it" and w2 == "'s") or \
+            (w1 == "it" and w2 == "has") or \
+            (w1 == "it" and w2 == "was") or \
+            (w1 == "this" and w2 == "is") or \
+            (w1 == "that" and w2 == "'s") or \
+            (w1 == "that" and w2 == "is"):
+        return False
+
+    #spaCy parsers isn't perfect, so the rules below are based on found parses.
+    starting_pos = content_obj.span[0].pos_
+    starting_tag = content_obj.span[0].tag_
+    starting_dep = content_obj.span[0].dep_
+    second_pos = content_obj.span[1].pos_
+    second_tag = content_obj.span[1].tag_
+    second_dep = content_obj.span[1].dep_
+    if starting_pos == "DET" and starting_dep == "nsubj": #Phrases such as "That suddenly created a more serious situation at Mount St. Helens, the most active volcano in the lower 48 states."
+            return True
+    elif starting_pos == "PRON": #Phrases like "He faces life in prison if he is convicted of murder."
+        return True
+    elif starting_pos == "ADV" and second_tag == "VBZ": #Phrases like "Here is the progress on a few of the important goals for the bay, based on information from the EPA's Chesapeake Bay Program."
+        return True
+
+def remove_sentences_starting_with_pronouns(sents):
+    return removal_step(remove_sentences_starting_with_pronouns_removal_funct, sents, 'remove_sentences_starting_with_pronouns')
