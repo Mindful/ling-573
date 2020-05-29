@@ -72,6 +72,7 @@ def _write_config_file(output_dir, out_filename, tree):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument('positionals', nargs='+')
     parser.add_argument('--peer_root_dir', type=str, required=True)
     parser.add_argument('--model_dir', type=str, required=True)
     parser.add_argument('--output_dir', type=str, default=OUTPUT_DIR)

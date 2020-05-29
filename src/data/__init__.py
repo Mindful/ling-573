@@ -6,10 +6,11 @@ from progress.bar import Bar
 from common import ROOT_DIR, Globals
 import os
 import re
+import sys
 
 
 DATA_DIR = os.path.join(ROOT_DIR, 'data/')
-OUTPUT_DIR = os.path.join(ROOT_DIR, 'outputs/')
+OUTPUT_DIR = os.path.join(ROOT_DIR, 'outputs/' + sys.argv[1])
 
 OUTPUT_FILE_STRING = '-A.M.100.'
 OUTPUT_FILE_REGEX = re.compile(r'.*' + re.escape(OUTPUT_FILE_STRING) + r'.*')
@@ -75,6 +76,9 @@ def _write_out_summary(topic_id, final_content, alphanum_id='1'):
     id_part_1 = topic_id[0:5]
     id_part_2 = topic_id[5:]
     output_filename = id_part_1 + OUTPUT_FILE_STRING + id_part_2 + '.' + alphanum_id
+
+    if not os.path.exists(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
 
     with open(os.path.join(OUTPUT_DIR, output_filename), 'w') as f:
         f.writelines(x.realized_text +'\n' for x in final_content)

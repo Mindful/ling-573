@@ -1,9 +1,9 @@
-executable = run_d2.sh
+executable = run.sh
 getenv     = true
 input      = /dev/null
-output     = d2.out
-error      = d2.error
-log        = d2.log
+output     = d4.out
+error      = d4.error
+log        = d4.log
 notification = complete
 arguments  = ""
 transfer_executable = false

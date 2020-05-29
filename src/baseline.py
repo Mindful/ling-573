@@ -6,11 +6,16 @@ from content_realization.realization import Realization
 from common import *
 from os.path import join
 from shutil import copyfile
+import sys
 
-def main():
-    # topics = get_dataset_topics(TRAIN)
-    # topics = get_dataset_topics(DEV_TEST)
-    topics = get_dataset_topics(EVAL)
+DATASETS = {
+    'train': get_dataset_topics(TRAIN),
+    'devtest': get_dataset_topics(DEV_TEST),
+    'evaltest': get_dataset_topics(EVAL)
+}
+
+def main(dataset_name):
+    topics = DATASETS[dataset_name]
 
     pipeline_classes = [
         DocumentGroup,
@@ -35,4 +40,9 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    dataset_name = sys.argv[1]
+
+    if dataset_name not in DATASETS.keys():
+        raise Exception("Invalid dataset given", "dataset options: {}".format(', '.join(DATASETS.keys())))
+
+    main(dataset_name)
