@@ -1,7 +1,9 @@
 import lxml.etree as ET
+from lxml import html
 import os.path
 from abc import ABC
 from data.article import Article
+import gzip
 
 
 class CorpusFile:
@@ -26,6 +28,15 @@ def read_new_content_file(filename):
     root = ET.parse(filename).getroot()
 
     return [Article.from_new_xml(x) for x in root]
+
+
+def read_new_gz_content_file(filename):
+    parser = ET.XMLParser(recover=True)
+    with gzip.open(filename, 'rt') as f:
+        docs = html.fragments_fromstring(f.read(), parser=parser)
+
+    return [Article.from_new_xml(x) for x in docs]
+
 
 # as per acquaint.dtd
 ENTITIES = {
@@ -126,20 +137,21 @@ class Aquaint2(Corpus):
         return filename[-4:] == '.xml'
 
 
+
 class Gigaword(Corpus):
 
-    lang_id = 'eng'
+    lang_suffix = '_eng'
 
     def __init__(self, base_dir=Corpus.base_directory):
         super().__init__('Gigaword', 2006, 2008, os.path.join(base_dir, 'LDC11T07/data/'))
-        self.reader_function = read_new_content_file
+        self.reader_function = read_new_gz_content_file
 
     def get_journal_dir(self, query):
-        return os.path.join(self.directory, query.journal_id.lower() + '_' + self.lang_id)
+        return os.path.join(self.directory, query.journal_id.lower() + self.lang_suffix)
 
     def get_filename(self, query):
-        return ''.join([query.journal_id.lower(), '_', self.lang_id, '_', query.file_id[:-2], '.xml'])
+        return ''.join([query.journal_id.lower(), self.lang_suffix, '_', query.file_id[:-2], '.gz'])
 
     def valid_file(self, filename):
-        return filename[-4:] == '.xml'
+        return filename[-4:] == '.gz'
 
