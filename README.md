@@ -3,26 +3,25 @@ UW CLMS program project for ling-573 by Paige Finkelstein, Jacob Hoffman, Wesley
 
 <br>
 
-## Running the full system (summarization and ROUGE evaluation) on patas
-All that is needed to run the end-to-end system on the `devtest` dataset on patas is to submit D2.cmd to condor:
+## Running the full system (summarization and ROUGE evaluation) on patas for Deliverable 4
+All that is needed to run the end-to-end system on the `devtest` and `evaltest` datasets on patas is to submit D4.cmd to condor:
 
-`condor_submit D2.cmd`
+`condor_submit D4.cmd`
 
-This will run the **run_d2.sh** script, which will set up a conda environment and install all of the necessary dependencies. It will write the generated summaries to the **output** directory, and will write the ROUGE evalulation score report to **results/rouge_scores.out**.
+This will run the **run.sh** script, which will set up a conda environment and install all of the necessary dependencies. 
 
-
-##### To switch from running on the **dev_test** corpus to the **train** corpus
-In **src/baseline.py** [here](https://github.com/Mindful/ling-573/blob/master/src/baseline.py#L11), uncomment `#topics = get_dataset_topics(TRAIN)` and comment out the line `topics = get_dataset_topics(DEV_TEST)` instead.
+It will write the generated summaries for `devtest` to the **output/devtest/** directory, and write the generated summaries for `evaltest` to the **output/evaltest/** directory. The 
+ROUGE evalulation score reports for both will be saved in the **results**  directory to as **rouge_scores_devtest.out** and **rouge_scores_evaltest.out**.
 
 <br>
 
 ### Generating summarization outputs 
 To run the summarization system and output summaries (to *outputs*):
 
-`python3 src/baseline.py`
+`python3 src/baseline.py devtest|train|evaltest`
 
 ### Producing ROUGE score evaluations for existing outputs
-Once you have summary results in the **outputs** directory, on patas run:
+Once you have summary results in the **outputs/x** directory, adjust the dataset name in the **eval.sh** file, and run:
 
 `sh eval.sh`
 
