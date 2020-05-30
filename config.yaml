@@ -32,7 +32,7 @@ Ordering:
   use_bert: False
 Realization:
   similarity_metric: 'spacy'
-  similarity_threshold: 0.97
+  similarity_threshold: 0.95
   remove_quotes: True
   remove_questions: True
   minimum_sentence_length: 4 # this is # of tokens that a sentence requires AFTER being subjected to regex, etc

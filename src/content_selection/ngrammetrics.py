@@ -2,6 +2,7 @@ from preprocessing.topic_doc_group import DocumentGroup
 import numpy as np
 import spacy
 from content_selection.lexrank import compute_bias_vector, ir_bias, idf_weighted_vector_bias, query_sentence
+import re
 
 from common import Globals
 #
@@ -222,20 +223,60 @@ class NgramMetrics:
         for article in articles:
             headline = article.headline
             sentences = self._get_sentences(article)
+            new_sentences = []
             NUM_SENTENCES = min(N, len(sentences))
             biases = self.get_bias(sentences) * self.config['bias_weight']
             ngram_scores = (1 - self.config['bias_weight']) * self.score(sentences, headline)
             final_scores = ngram_scores + biases
-            scores = sorted([(i, final_scores[i]) for i in range(len(sentences))], key=lambda x: x[1], reverse=True)
-            selections = sorted([scores[n] for n in range(NUM_SENTENCES)], key=lambda x: x[0])
-            for tupl in selections:
-                sentence = sentences[tupl[0]]
-                score = tupl[1]
+            sentences_and_scores = zip(sentences,final_scores)
+            sentences_and_scores = sorted(sentences_and_scores, key=lambda x:x[1],reverse=False)
+
+            indices_to_remove = []
+            for i, (sent,sc) in enumerate(sentences_and_scores):
+                if self.sentence_to_be_removed(sent):
+                    indices_to_remove.append(i)
+            while len(sentences_and_scores) > N and len(indices_to_remove)>0:
+                ind = indices_to_remove.pop(0)
+                sentences_and_scores.pop(ind)
+                indices_to_remove = [x-1 for x in indices_to_remove]
+
+            sentences_and_scores = sorted(sentences_and_scores, key=lambda x:x[1],reverse=True)
+            sentences_added = 0
+            for tup in sentences_and_scores:
+                if sentences_added == N:
+                    break
+                (sentence,sc) = tup
                 self.re_weight2(sentence)
-                if len(str(sentence).split()) > self.config['length_limit']:
+                if not self.sentence_to_be_removed(sentence):
                     record_sents.setdefault((sentence, article), 0.0)
-                    record_sents[(sentence, article)] += score / num_batches
+                    record_sents[(sentence, article)] += sc / num_batches
+                    sentences_added +=1
         return record_sents
+
+    def sentence_to_be_removed(self, sentence):
+        if sentence._.contains_quote: #quotes
+            return True
+        if sentence.text[-1] != '.' and sentence.text[-1] != ';': #fragments
+            return True
+        if re.match(r'.*\?.*',sentence.text)is not None: #questions
+            return True
+        if len(str(sentence).split()) < self.config['length_limit']:
+            return True
+        starting_pos = sentence[0].pos_
+        starting_tag = sentence[0].tag_
+        starting_dep = sentence[0].dep_
+        second_pos = sentence[1].pos_
+        second_tag = sentence[1].tag_
+        second_dep = sentence[1].dep_
+        if starting_pos == "DET" and starting_dep == "nsubj": #Phrases such as "That suddenly created a more serious situation at Mount St. Helens, the most active volcano in the lower 48 states."
+            return True
+        elif starting_pos == "ADV" and starting_dep == "nsubj":  # Phrases such as "Most had eaten cooked hot dogs the month before they became ill."
+            return True
+        elif starting_pos == "PRON": #Phrases like "He faces life in prison if he is convicted of murder."
+            return True
+        elif starting_pos == "ADV" and second_tag == "VBZ": #Phrases like "Here is the progress on a few of the important goals for the bay, based on information from the EPA's Chesapeake Bay Program."
+            return True
+
 
     def basic_per_article(self,N):
         record = {}

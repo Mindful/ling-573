@@ -567,7 +567,9 @@ def remove_sentences_starting_with_pronouns_removal_funct(content_obj):
     second_tag = content_obj.span[1].tag_
     second_dep = content_obj.span[1].dep_
     if starting_pos == "DET" and starting_dep == "nsubj": #Phrases such as "That suddenly created a more serious situation at Mount St. Helens, the most active volcano in the lower 48 states."
-            return True
+        return True
+    elif starting_pos == "ADV" and starting_dep == "nsubj":  # Phrases such as "Most had eaten cooked hot dogs the month before they became ill."
+        return True
     elif starting_pos == "PRON": #Phrases like "He faces life in prison if he is convicted of murder."
         return True
     elif starting_pos == "ADV" and second_tag == "VBZ": #Phrases like "Here is the progress on a few of the important goals for the bay, based on information from the EPA's Chesapeake Bay Program."
