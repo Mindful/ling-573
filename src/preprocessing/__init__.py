@@ -51,6 +51,8 @@ def clean_text(text, remove_quotes=False):
     text = re.sub(r"^\s*(SOURCES:)+\s*(\w+\s*){0,6},?\sstaff reporting.?", "", text, flags=re.IGNORECASE) # remove staff reporting, e.g. Epa chesapeake bay program, staff reporting
     text = re.sub(r",?\sstaff reporting.?", "", text, flags=re.IGNORECASE) # remove staff reporting not at beginning of sentence
     text = re.sub(r'^By [\w+] ([\w+])? ([\w+])?.$', '', text, flags=re.IGNORECASE)  # remove by lines, e.g. By Sam Howe Verhovek.
+    text = re.sub(r'The Washington Post [a-zA-z|\s]*\.', '', text, flags=re.IGNORECASE)  # remove news summary lines
+    text = re.sub(r'Associated Press Writers [a-zA-z|\s|;|\.]*$', '', text, flags=re.IGNORECASE)  # remove news summary lines II
 
 
     # remove (or convert?) the location parenthetical that begins most articles, e.g. "LITTLETON, Colo. (AP) --"
